@@ -72,7 +72,7 @@ export function BookingForm() {
                 <FormItem>
                 <FormLabel>Full Name</FormLabel>
                 <FormControl>
-                    <Input placeholder="John Doe" {...field} />
+                    <Input {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -85,7 +85,7 @@ export function BookingForm() {
                 <FormItem>
                 <FormLabel>Contact Number</FormLabel>
                 <FormControl>
-                    <Input placeholder="+91 1234567890" {...field} />
+                    <Input {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -99,7 +99,7 @@ export function BookingForm() {
             <FormItem>
               <FormLabel>Pickup Location</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Delhi Airport, Terminal 3" {...field} />
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -112,7 +112,7 @@ export function BookingForm() {
             <FormItem>
               <FormLabel>Drop-off Location</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Connaught Place, New Delhi" {...field} />
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
