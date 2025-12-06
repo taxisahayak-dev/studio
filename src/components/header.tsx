@@ -39,7 +39,6 @@ const navLinks = [
   { href: '/about', label: 'About' },
   { href: '/booking', label: 'Booking' },
   { href: '/payment', label: 'Payment' },
-  { href: '/contact', label: 'Contact' },
 ];
 
 export function Header() {
@@ -66,6 +65,17 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+           <Link
+              href="/contact"
+              className={cn(
+                'text-sm font-medium transition-colors hover:text-primary',
+                pathname === "/contact"
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+              )}
+            >
+              Contact
+            </Link>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -128,6 +138,18 @@ export function Header() {
                       {link.label}
                     </Link>
                   ))}
+                  <Link
+                      href="/contact"
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        'text-lg font-medium transition-colors hover:text-primary',
+                        pathname === "/contact"
+                          ? 'text-primary'
+                          : 'text-muted-foreground'
+                      )}
+                    >
+                      Contact
+                    </Link>
                 </nav>
                 <div className="mt-6 flex flex-col gap-4">
                   <Button asChild className="w-full">
