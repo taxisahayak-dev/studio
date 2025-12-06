@@ -43,7 +43,8 @@ export default function PaymentPage() {
                  <div className="flex flex-col items-center justify-center">
                     <div className="relative h-64 w-64 rounded-lg border bg-muted/50 p-4">
                         <Image
-                            src="/qr-code.png"
+                            src="/WhatsApp Image 2025-12-06 at 18.07.39_c86a22fe.jpg"
+  
                             alt="QR Code for payment"
                             width={256}
                             height={256}
