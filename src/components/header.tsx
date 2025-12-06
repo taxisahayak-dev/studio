@@ -45,20 +45,36 @@ const navLinks = [
 export function Header() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [activeLink, setActiveLink] = useState('/#');
+  const [activeLink, setActiveLink] = useState('');
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    const handleHashChange = () => {
-      setActiveLink(window.location.pathname + (window.location.hash || '#'));
-    };
+    setIsClient(true);
+  }, []);
 
-    handleHashChange(); // Set initial active link
-    window.addEventListener('hashchange', handleHashChange);
+  useEffect(() => {
+    if (isClient) {
+      const handleHashChange = () => {
+        setActiveLink(window.location.hash || '#');
+      };
 
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, [pathname]);
+      handleHashChange();
+      window.addEventListener('hashchange', handleHashChange, { passive: true });
+
+      // Clean up the event listener when the component unmounts
+      return () => {
+        window.removeEventListener('hashchange', handleHashChange);
+      };
+    }
+  }, [isClient, pathname]);
+  
+
+  const getLinkHref = (link: { href: string; label: string }) => {
+    if (pathname === '/') {
+        return link.href;
+    }
+    return `/${link.href}`;
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -69,10 +85,10 @@ export function Header() {
           {navLinks.map(link => (
             <Link
               key={link.href}
-              href={link.href}
+              href={getLinkHref(link)}
               className={cn(
                 'text-sm font-medium transition-colors hover:text-primary',
-                activeLink === link.href
+                isClient && (activeLink === link.href.substring(1) || (activeLink === '' && link.href === '/#'))
                   ? 'text-primary'
                   : 'text-muted-foreground'
               )}
@@ -110,7 +126,7 @@ export function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button asChild className="hidden md:flex">
+          <Button asChild>
             <Link href="/#booking">Book a Ride</Link>
           </Button>
 
@@ -130,11 +146,11 @@ export function Header() {
                   {navLinks.map(link => (
                     <Link
                       key={link.href}
-                      href={link.href}
+                      href={getLinkHref(link)}
                       onClick={() => setIsOpen(false)}
                       className={cn(
                         'text-lg font-medium transition-colors hover:text-primary',
-                        activeLink === link.href
+                        isClient && (activeLink === link.href.substring(1) || (activeLink === '' && link.href === '/#'))
                           ? 'text-primary'
                           : 'text-muted-foreground'
                       )}
