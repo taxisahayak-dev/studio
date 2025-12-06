@@ -11,8 +11,10 @@ import { useState } from 'react';
 
 const navLinks = [
   { href: '/', label: 'Home' },
+  { href: '/about', label: 'About Us' },
   { href: '/booking', label: 'Book Now' },
   { href: '/contact', label: 'Contact' },
+  { href: '/payment', label: 'Payment' },
 ];
 
 export function Header() {
