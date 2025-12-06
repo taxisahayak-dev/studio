@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-image",
+      "description": "A modern taxi driving through a city at night.",
+      "imageUrl": "https://images.unsplash.com/photo-1601042879364-f3947d3f9c16?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxjaXR5JTIwbmlnaHR8ZW58MHx8fHwxNzY1MDA4NTQ0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "city night"
+    },
+    {
+      "id": "service-highlight-1",
+      "description": "A taxi waiting at an airport terminal.",
+      "imageUrl": "https://images.unsplash.com/photo-1603525846431-ac38a7775754?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhaXJwb3J0JTIwdGVybWluYWx8ZW58MHx8fHwxNzY0OTQ5MDAyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "airport terminal"
+    },
+    {
+      "id": "feature-1",
+      "description": "A smiling taxi driver.",
+      "imageUrl": "https://images.unsplash.com/photo-1735553396889-68bdc2419f3b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxkcml2ZXIlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjQ5MjA3MjR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "driver portrait"
+    }
+  ]
 }
