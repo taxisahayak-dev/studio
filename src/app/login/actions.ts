@@ -2,8 +2,10 @@
 
 import { z } from 'zod';
 import { initializeFirebase } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { getAuth } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from 'firebase/auth';
 
 const loginSchema = z.object({
   adminName: z.string(),
@@ -19,9 +21,6 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
 
   const { adminName, password } = parsedData.data;
 
-  // For now, we'll use a hardcoded admin username and map it to an email.
-  // In a real application, you would look up the user's email from a database
-  // based on their username.
   if (adminName !== 'NikhilPandey951357' || password !== 'NikhilisNikhil') {
     return { success: false, message: 'Invalid admin name or password.' };
   }
@@ -30,16 +29,25 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
 
   try {
     const { auth } = initializeFirebase();
-    await signInWithEmailAndPassword(auth, adminEmail, password);
+    try {
+      // First, try to sign in.
+      await signInWithEmailAndPassword(auth, adminEmail, password);
+    } catch (error: any) {
+      // If the user does not exist, create them.
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        await createUserWithEmailAndPassword(auth, adminEmail, password);
+      } else {
+        // For other errors (like wrong password), re-throw to be caught below.
+        throw error;
+      }
+    }
     return { success: true };
   } catch (error: any) {
-    let message = 'An unexpected error occurred.';
+    let message = 'An unexpected error occurred during login.';
     if (error.code) {
       switch (error.code) {
-        case 'auth/user-not-found':
         case 'auth/wrong-password':
-        case 'auth/invalid-credential':
-          message = 'Invalid admin name or password.';
+          message = 'Invalid password.';
           break;
         case 'auth/invalid-email':
           message = 'The configured admin email is invalid.';
