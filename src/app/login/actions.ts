@@ -25,7 +25,7 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
 
   const { email, password } = parsed.data;
 
-  // Allow only 1 admin
+  // Immediately reject if credentials don't match the hardcoded admin values
   if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
     return { success: false, message: "Invalid admin credentials" };
   }
@@ -33,19 +33,21 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
   try {
     const { auth } = initializeFirebase();
 
-    // Try login
     try {
+      // First, try to sign in
       await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
     } catch (error: any) {
-      // If admin not found, create account
-      if (
-        error.code === "auth/user-not-found" ||
-        error.code === "auth/invalid-credential" ||
-        error.code === "auth/invalid-email"
-      ) {
-        await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
-        await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+      // If sign-in fails because the user doesn't exist, create the user
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
+        try {
+          await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+        } catch (creationError: any) {
+          // If creation also fails (e.g., weak password, email already exists with different credential), fail gracefully
+          console.log("Firebase creation error:", creationError.code, creationError.message);
+          return { success: false, message: "Could not create admin account." };
+        }
       } else {
+        // For any other sign-in error, re-throw to be caught by the outer block
         throw error;
       }
     }
@@ -53,6 +55,6 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
     return { success: true, message: "Login successful" };
   } catch (error: any) {
     console.log("Firebase login error:", error.code, error.message);
-    return { success: false, message: "Login failed. Try again." };
+    return { success: false, message: "Login failed. Please try again." };
   }
 }
