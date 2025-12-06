@@ -96,9 +96,9 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow get: if isAdmin() || (isSignedIn() && isOwner(resource.data.customerId));
       allow list: if isAdmin();
-      allow create: if isSignedIn();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow create: if isSignedIn() && isOwner(request.resource.data.customerId);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
@@ -113,8 +113,8 @@ service cloud.firestore {
       allow get: if isAdmin();
       allow list: if isAdmin();
       allow create: if true;
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
@@ -127,10 +127,10 @@ service cloud.firestore {
      */
     match /customers/{customerId} {
       allow get: if isOwner(customerId) || isAdmin();
-      allow list: if false;
+      allow list: if false; // Disallow listing all customers for privacy
       allow create: if isOwner(customerId) && request.resource.data.id == customerId;
-      allow update: if isExistingOwner(customerId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(customerId);
+      allow update: if isOwner(customerId);
+      allow delete: if isOwner(customerId);
     }
   }
 }

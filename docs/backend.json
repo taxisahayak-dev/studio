@@ -37,11 +37,10 @@
         },
         "customerId": {
           "type": "string",
-          "description": "Reference to Customer. (Relationship: Customer 1:N Booking)"
+          "description": "The UID of the customer who made the booking."
         }
       },
       "required": [
-        "id",
         "name",
         "contact",
         "pickupPoint",
@@ -80,13 +79,22 @@
           "format": "date-time"
         }
       },
-      "required": [
-        "id",
-        "name",
-        "email",
-        "message",
-        "submissionDate"
-      ]
+      "required": ["name", "email", "message", "submissionDate"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's public profile information.",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string"
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": ["displayName"]
     },
     "AdminUser": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -112,12 +120,7 @@
           "description": "Role of the admin user (e.g., superadmin, editor)."
         }
       },
-      "required": [
-        "id",
-        "username",
-        "email",
-        "role"
-      ]
+      "required": ["id", "username", "email", "role"]
     },
     "Customer": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -127,7 +130,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the customer."
+          "description": "Unique identifier for the customer (matches Firebase Auth UID)."
         },
         "firstName": {
           "type": "string",
@@ -151,21 +154,11 @@
           "description": "Address of the customer."
         }
       },
-      "required": [
-        "id",
-        "firstName",
-        "lastName",
-        "email",
-        "phone",
-        "address"
-      ]
+      "required": ["id", "firstName", "lastName", "email", "phone"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
     "structure": [
@@ -192,7 +185,7 @@
           "schema": {
             "$ref": "#/backend/entities/Booking"
           },
-          "description": "Collection to store all booking requests.",
+          "description": "Collection to store all booking requests. Each booking is linked to a customer via `customerId`.",
           "params": [
             {
               "name": "bookingId",
@@ -224,16 +217,16 @@
           "schema": {
             "$ref": "#/backend/entities/Customer"
           },
-          "description": "Collection to store customer data. Uses path-based ownership.",
+          "description": "Collection to store customer data. The document ID must match the Firebase Auth UID of the user.",
           "params": [
             {
               "name": "customerId",
-              "description": "The unique identifier for the customer."
+              "description": "The unique identifier for the customer, matching their Firebase Auth UID."
             }
           ]
         }
       }
     ],
-    "reasoning": "This Firestore structure prioritizes security, scalability, and debuggability based on the core design principles.  Authorization Independence is achieved by avoiding `get()` calls in security rules. All authorization-related data is denormalized.  The structure uses path-based ownership for user-related data and a membership map for collaborative data (if applicable). Structural Segregation is enforced by placing documents with similar access control needs in the same collection. QAPs are supported via structural segregation and clear ownership models, ensuring secure `list` operations.\n\nSpecifically, admin users are stored in a dedicated collection `/roles_admin/{uid}`. The existence of a document at this path indicates admin privileges. All bookings are stored in a `/bookings/{bookingId}` collection, and the `customerId` is included in each booking document to enable filtering by customer and simplified security rules. Contact form submissions are stored in a `/contact_form_submissions/{submissionId}` collection, allowing admin users to easily access and manage them. Customers are stored in `/customers/{customerId}`, following the path-based ownership pattern."
+    "reasoning": "This Firestore structure prioritizes security, scalability, and debuggability. Admins are managed via a `/roles_admin` collection. Bookings are stored centrally in `/bookings` with a `customerId` field to link them to the user who created them, which avoids costly lookups in security rules. The `/customers` collection stores user details and uses path-based ownership (the document ID is the user's UID), ensuring users can only access their own data. Contact submissions are publicly writable but only readable by admins. This design enforces clear ownership and access patterns."
   }
 }
