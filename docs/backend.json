@@ -129,6 +129,41 @@
         }
       },
       "required": ["id", "firstName", "lastName", "email", "phone"]
+    },
+    "Review": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Review",
+      "type": "object",
+      "description": "Represents a user review.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the review."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who submitted the review."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email of the reviewer.",
+          "format": "email"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Rating from 1 to 5."
+        },
+        "message": {
+          "type": "string",
+          "description": "The review text."
+        },
+        "submissionDate": {
+          "type": "string",
+          "description": "Date of the review submission.",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "email", "rating", "message", "submissionDate"]
     }
   },
   "auth": {
@@ -143,7 +178,7 @@
           "schema": {
             "$ref": "#/backend/entities/Booking"
           },
-          "description": "Collection to store all booking requests. Read access is restricted to admins and the customer who created the booking.",
+          "description": "Collection to store all booking requests. Read access is restricted to the customer who created the booking.",
           "params": [
             {
               "name": "bookingId",
@@ -159,7 +194,7 @@
           "schema": {
             "$ref": "#/backend/entities/ContactFormSubmission"
           },
-          "description": "Collection to store contact form submissions. Read access is restricted to admins.",
+          "description": "Collection to store contact form submissions. Read access is restricted.",
           "params": [
             {
               "name": "submissionId",
@@ -183,8 +218,23 @@
             }
           ]
         }
+      },
+      {
+        "path": "/reviews/{reviewId}",
+        "definition": {
+          "entityName": "Review",
+          "schema": {
+            "$ref": "#/backend/entities/Review"
+          },
+          "description": "Collection to store user reviews. Writable by any authenticated user.",
+          "params": [
+            {
+              "name": "reviewId",
+              "description": "The unique identifier for the review."
+            }
+          ]
+        }
       }
-    ],
-    "reasoning": "This Firestore structure prioritizes security, scalability, and debuggability. Admins are managed via a `/roles_admin` collection. Bookings are stored centrally in `/bookings` with a `customerId` field to link them to the user who created them, which avoids costly lookups in security rules. The `/customers` collection stores user details and uses path-based ownership (the document ID is the user's UID), ensuring users can only access their own data. Contact submissions are publicly writable but only readable by admins. This design enforces clear ownership and access patterns."
+    ]
   }
 }

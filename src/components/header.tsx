@@ -42,6 +42,7 @@ const navLinks = [
   { href: '/#about', label: 'About' },
   { href: '/#booking', label: 'Booking' },
   { href: '/#payment', label: 'Payment' },
+  { href: '/review', label: 'Reviews' },
   { href: '/#contact', label: 'Contact' },
 ];
 
@@ -99,15 +100,20 @@ export function Header() {
   }, [isClient, pathname]);
 
   const getLinkClass = (href: string) => {
-    if (!isClient || pathname !== '/') return 'text-muted-foreground';
-    
-    const normalizedHref = href.substring(1); // remove /
-    
-    if (activeLink === '' && (normalizedHref === '#' || normalizedHref === '')) {
-      return 'text-primary';
-    }
+    if (!isClient) return 'text-muted-foreground';
 
-    return activeLink === normalizedHref ? 'text-primary' : 'text-muted-foreground';
+    if (href.startsWith('/#')) {
+        if(pathname !== '/') return 'text-muted-foreground'
+        const normalizedHref = href.substring(1); // remove /
+        
+        if (activeLink === '' && (normalizedHref === '#' || normalizedHref === '')) {
+          return 'text-primary';
+        }
+
+        return activeLink === normalizedHref ? 'text-primary' : 'text-muted-foreground';
+    }
+    
+    return pathname === href ? 'text-primary' : 'text-muted-foreground'
   };
   
   const handleLogout = async () => {
@@ -125,7 +131,7 @@ export function Header() {
               onClick={() => isOpen && setIsOpen(false)}
               className={cn(
                 'text-sm font-medium transition-colors hover:text-primary',
-                 pathname === link.href ? 'text-primary' : getLinkClass(link.href)
+                 getLinkClass(link.href)
               )}
             >
               {link.label}
@@ -142,7 +148,7 @@ export function Header() {
               onClick={() => setIsOpen(false)}
               className={cn(
                 'text-lg font-medium transition-colors hover:text-primary',
-                pathname === link.href ? 'text-primary' : getLinkClass(link.href)
+                getLinkClass(link.href)
               )}
             >
               {link.label}

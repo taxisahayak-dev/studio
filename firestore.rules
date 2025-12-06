@@ -16,19 +16,6 @@
  *   and the specific customer who created the booking.
  * - /contact_form_submissions/{submissionId}: A collection for public contact
  *   form entries, readable only by admins.
- *
- * Key Security Decisions:
- * - Admin Management: The `/roles_admin` collection is read-only via these rules.
- *   Admins must be provisioned manually through the Firebase Console or a trusted
- *   backend service to prevent privilege escalation from the client.
- * - No User Enumeration: Listing documents in the `/customers` collection is
- *   explicitly disallowed to protect user privacy.
- * - Denormalization for Authorization: The `/bookings` documents contain a
- *   `customerId` field. This is critical for allowing a customer to access their
- *   own booking without requiring a slow and costly `get()` call in the rule.
- * - Public Creation, Private Reads: The `/contact_form_submissions` collection
- *   allows any user (even unauthenticated ones) to create a document, but only
- *   admins can read or manage the submissions.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -98,6 +85,19 @@ service cloud.firestore {
       allow create: if isOwner(customerId) && request.resource.data.id == customerId;
       allow update: if isOwner(customerId);
       allow delete: if isOwner(customerId);
+    }
+
+    /**
+     * @description Stores user reviews. Authenticated users can submit a review.
+     * @path /reviews/{reviewId}
+     * @allow (create) An authenticated user can submit a review.
+     */
+    match /reviews/{reviewId} {
+      allow get: if true; // Allow anyone to read reviews
+      allow list: if true; // Allow anyone to list reviews
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }

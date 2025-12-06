@@ -19,3 +19,11 @@ export const contactSchema = z.object({
 });
 
 export type ContactSchema = z.infer<typeof contactSchema>;
+
+export const reviewSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  rating: z.number().min(1, { message: "Please provide a rating." }).max(5),
+  message: z.string().min(10, { message: "Review must be at least 10 characters." }).max(1000, { message: "Review must not exceed 1000 characters." }),
+});
+
+export type ReviewSchema = z.infer<typeof reviewSchema>;
