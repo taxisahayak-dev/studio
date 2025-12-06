@@ -21,11 +21,11 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
   // For now, we'll use a hardcoded admin username and map it to an email.
   // In a real application, you would look up the user's email from a database
   // based on their username.
-  if (adminName !== 'admin') {
+  if (adminName !== 'NikhilPandey951357' || password !== 'NikhilisNikhil') {
     return { success: false, message: 'Invalid admin name or password.' };
   }
 
-  const adminEmail = 'admin@example.com';
+  const adminEmail = 'nikhilpandey951357@example.com';
 
   try {
     const { auth } = initializeFirebase();
