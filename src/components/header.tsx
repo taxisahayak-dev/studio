@@ -88,7 +88,7 @@ export function Header() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
                 <a
-                  href="https://wa.me/911234567890"
+                  href="https://wa.me/917060610430"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2"
@@ -98,7 +98,7 @@ export function Header() {
                 </a>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="tel:+911234567890" className="flex items-center gap-2">
+                <a href="tel:+917060610430" className="flex items-center gap-2">
                   <Phone />
                   Call Us
                 </a>
@@ -162,7 +162,7 @@ export function Header() {
                     className="w-full bg-green-500 hover:bg-green-600 text-white"
                   >
                     <a
-                      href="https://wa.me/911234567890"
+                      href="https://wa.me/917060610430"
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setIsOpen(false)}
@@ -173,7 +173,7 @@ export function Header() {
                   </Button>
                   <Button asChild className="w-full" variant="outline">
                     <a
-                      href="tel:+911234567890"
+                      href="tel:+917060610430"
                       onClick={() => setIsOpen(false)}
                     >
                       <Phone />
