@@ -1,64 +1,58 @@
+
 'use server';
 
 import { z } from 'zod';
 import { initializeFirebase } from '@/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  getAuth, 
+  createUserWithEmailAndPassword 
+} from 'firebase/auth';
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
 
-const ADMIN_EMAIL = 'nikhilpandit9045@gmail.com';
-const ADMIN_PASSWORD = 'nikhil@9548';
+const ADMIN_EMAIL = "nikhilpandit9046@gmail.com";
+const ADMIN_PASSWORD = "nikhil@9948";
 
 export async function handleLogin(data: z.infer<typeof loginSchema>) {
-  const parsedData = loginSchema.safeParse(data);
-
-  if (!parsedData.success) {
-    return { success: false, message: 'Invalid data provided.' };
+  const parsed = loginSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, message: "Invalid data" };
   }
 
-  const { email, password } = parsedData.data;
+  const { email, password } = parsed.data;
 
-  // Enforce specific admin credentials before hitting Firebase
+  // Allow only 1 admin
   if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
-    return { success: false, message: 'Invalid admin credentials.' };
+    return { success: false, message: "Invalid admin credentials" };
   }
 
   try {
     const { auth } = initializeFirebase();
-    
+
+    // Try login
     try {
-      // First, try to sign in.
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
     } catch (error: any) {
-      // If sign-in fails because the user doesn't exist, create the user.
-      // 'auth/invalid-credential' is the code for both user not found and wrong password.
-      if (error.code === 'auth/invalid-credential') {
-        try {
-          // Attempt to create the user. This will only succeed if the user truly doesn't exist.
-          await createUserWithEmailAndPassword(auth, email, password);
-          // If creation is successful, no need to sign in again, as createUserWithEmailAndPassword also signs the user in.
-        } catch (creationError: any) {
-            // If user creation fails because the email already exists, it means the password was wrong in the initial sign-in attempt.
-            if (creationError.code === 'auth/email-already-in-use') {
-                 return { success: false, message: 'Invalid admin credentials.' };
-            }
-            // For any other creation error, return a generic message.
-            throw creationError;
-        }
+      // If admin not found, create account
+      if (
+        error.code === "auth/user-not-found" ||
+        error.code === "auth/invalid-credential" ||
+        error.code === "auth/invalid-email"
+      ) {
+        await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+        await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
       } else {
-        // If the sign-in error is something else (e.g., network issue), re-throw it.
         throw error;
       }
     }
-    
-    return { success: true, message: 'Login successful.' };
 
+    return { success: true, message: "Login successful" };
   } catch (error: any) {
-    console.error('Login error:', error.code, error.message);
-    // Provide a more specific but still safe error for debugging, or a generic one.
-    return { success: false, message: 'An unexpected error occurred during login.' };
+    console.log("Firebase login error:", error.code, error.message);
+    return { success: false, message: "Login failed. Try again." };
   }
 }
