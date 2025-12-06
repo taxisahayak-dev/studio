@@ -53,28 +53,32 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    if (isClient) {
-      const handleHashChange = () => {
-        setActiveLink(window.location.hash || '#');
-      };
+    if (!isClient) return;
 
-      handleHashChange();
-      window.addEventListener('hashchange', handleHashChange, { passive: true });
+    const handleHashChange = () => {
+      setActiveLink(window.location.hash);
+    };
 
-      // Clean up the event listener when the component unmounts
-      return () => {
-        window.removeEventListener('hashchange', handleHashChange);
-      };
+    handleHashChange(); // Set initial active link
+    window.addEventListener('hashchange', handleHashChange, { passive: true });
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [isClient]);
+
+  const getLinkClass = (href: string) => {
+    if (!isClient) return 'text-muted-foreground';
+
+    const normalizedHref = href.startsWith('/#') ? href.substring(1) : href;
+    const isHomePage = pathname === '/' && activeLink === '';
+
+    if (normalizedHref === '#' && isHomePage) {
+      return 'text-primary';
     }
-  }, [isClient, pathname]);
-  
 
-  const getLinkHref = (link: { href: string; label: string }) => {
-    if (pathname === '/') {
-        return link.href;
-    }
-    return `/${link.href}`;
-  }
+    return activeLink === normalizedHref ? 'text-primary' : 'text-muted-foreground';
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -85,12 +89,10 @@ export function Header() {
           {navLinks.map(link => (
             <Link
               key={link.href}
-              href={getLinkHref(link)}
+              href={link.href}
               className={cn(
                 'text-sm font-medium transition-colors hover:text-primary',
-                isClient && (activeLink === link.href.substring(1) || (activeLink === '' && link.href === '/#'))
-                  ? 'text-primary'
-                  : 'text-muted-foreground'
+                getLinkClass(link.href)
               )}
             >
               {link.label}
@@ -118,7 +120,7 @@ export function Header() {
                 </a>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="tel:+917060610430" className="flex items-center gap-2">
+                <a href="tel:7060610430" className="flex items-center gap-2">
                   <Phone />
                   Call Us
                 </a>
@@ -146,13 +148,11 @@ export function Header() {
                   {navLinks.map(link => (
                     <Link
                       key={link.href}
-                      href={getLinkHref(link)}
+                      href={link.href}
                       onClick={() => setIsOpen(false)}
                       className={cn(
                         'text-lg font-medium transition-colors hover:text-primary',
-                        isClient && (activeLink === link.href.substring(1) || (activeLink === '' && link.href === '/#'))
-                          ? 'text-primary'
-                          : 'text-muted-foreground'
+                        getLinkClass(link.href)
                       )}
                     >
                       {link.label}
@@ -181,7 +181,7 @@ export function Header() {
                   </Button>
                   <Button asChild className="w-full" variant="outline">
                     <a
-                      href="tel:+917060610430"
+                      href="tel:7060610430"
                       onClick={() => setIsOpen(false)}
                     >
                       <Phone />
