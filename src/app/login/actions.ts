@@ -9,6 +9,9 @@ const loginSchema = z.object({
   password: z.string().min(6),
 });
 
+const ADMIN_EMAIL = 'nikhilpandit9045@gmail.com';
+const ADMIN_PASSWORD = 'nikhil@9548';
+
 export async function handleLogin(data: z.infer<typeof loginSchema>) {
   const parsedData = loginSchema.safeParse(data);
 
@@ -18,24 +21,26 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
 
   const { email, password } = parsedData.data;
 
+  // Enforce specific admin credentials
+  if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+    return { success: false, message: 'Invalid admin credentials.' };
+  }
+
   try {
     const { auth } = initializeFirebase();
     
-    // In a real-world scenario, you wouldn't automatically create a user on failed login.
-    // For this demonstration, if the admin user doesn't exist, we create it.
-    // This is for setup purposes only and should be handled differently in production
-    // (e.g., a separate admin creation script).
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      // First, try to sign in with the admin credentials.
+      await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
     } catch (error: any) {
+        // If sign-in fails because the user doesn't exist, create the user.
+        // This is a setup mechanism for the first login.
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
-            // If the user does not exist, create it.
-            // This is a simplified setup flow.
-            await createUserWithEmailAndPassword(auth, email, password);
-            // Now, sign in with the newly created user
-            await signInWithEmailAndPassword(auth, email, password);
+            await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+            // After creation, sign in again to establish the session.
+            await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
         } else {
-            // For other errors (like wrong password), re-throw to be caught by the outer catch block.
+            // If the error is something else (like network error), throw it.
             throw error;
         }
     }
@@ -45,6 +50,6 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
   } catch (error: any) {
     console.error('Login error:', error.code, error.message);
     // Provide a generic error message for security reasons.
-    return { success: false, message: 'Invalid admin credentials.' };
+    return { success: false, message: 'An unexpected error occurred during login.' };
   }
 }
