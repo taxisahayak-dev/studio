@@ -182,6 +182,9 @@ export function BookingForm() {
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Submit Booking
         </Button>
+        <p className="text-center text-sm text-muted-foreground">
+            After confirming your booking, we recommend calling us for further details.
+        </p>
       </form>
     </Form>
   );
