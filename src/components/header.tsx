@@ -62,8 +62,34 @@ export function Header() {
     handleHashChange(); // Set initial active link
     window.addEventListener('hashchange', handleHashChange, { passive: true });
 
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute('id');
+            if (id) {
+                const newHash = `#${id}`;
+                if(window.location.hash !== newHash) {
+                    // Update hash without triggering scroll
+                    history.replaceState(null, '', newHash);
+                    setActiveLink(newHash);
+                }
+            }
+          }
+        });
+      },
+      { rootMargin: '-50% 0px -50% 0px' }
+    );
+
+    document.querySelectorAll('section[id]').forEach((section) => {
+      observer.observe(section);
+    });
+
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
+       document.querySelectorAll('section[id]').forEach((section) => {
+        observer.unobserve(section);
+      });
     };
   }, [isClient]);
 
@@ -73,7 +99,7 @@ export function Header() {
     const normalizedHref = href.startsWith('/#') ? href.substring(1) : href;
     const isHomePage = pathname === '/' && activeLink === '';
 
-    if (normalizedHref === '#' && isHomePage) {
+    if ((normalizedHref === '#' || normalizedHref === '') && isHomePage) {
       return 'text-primary';
     }
 
