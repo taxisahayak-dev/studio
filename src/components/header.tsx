@@ -177,9 +177,9 @@ export function Header() {
             <Button variant="outline" size="sm" className="hidden md:flex">
                 Contact Us
             </Button>
-            <Link href="/#booking" passHref legacyBehavior>
-                <Button asChild><a>Book a Ride</a></Button>
-            </Link>
+            <Button asChild>
+                <Link href="/#booking">Book a Ride</Link>
+            </Button>
             <Button variant="outline" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
             </Button>
@@ -235,9 +235,9 @@ export function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Link href="/#booking" passHref legacyBehavior>
-            <Button asChild><a>Book a Ride</a></Button>
-          </Link>
+          <Button asChild>
+            <Link href="/#booking">Book a Ride</Link>
+          </Button>
 
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
@@ -255,11 +255,9 @@ export function Header() {
                   {renderMobileNavLinks()}
                 </nav>
                 <div className="mt-6 flex flex-col gap-4">
-                  <Link href="/#booking" passHref legacyBehavior>
-                    <Button asChild className="w-full" onClick={() => setIsOpen(false)}>
-                      <a>Book a Ride</a>
-                    </Button>
-                  </Link>
+                  <Button asChild className="w-full" onClick={() => setIsOpen(false)}>
+                      <Link href="/#booking">Book a Ride</Link>
+                  </Button>
                   <Button
                     asChild
                     className="w-full bg-green-500 hover:bg-green-600 text-white"
