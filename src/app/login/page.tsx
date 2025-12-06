@@ -58,7 +58,7 @@ export default function LoginPage() {
         title: 'Login Successful',
         description: 'Redirecting to the admin dashboard...',
       });
-      router.push('/admin-dashboard');
+      router.push('/admin');
     } else {
       toast({
         variant: 'destructive',
