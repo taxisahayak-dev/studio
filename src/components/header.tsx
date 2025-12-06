@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -45,12 +45,20 @@ const navLinks = [
 export function Header() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  
-  const getActiveLink = () => {
-    if (typeof window === 'undefined') return '/#';
-    const currentPath = window.location.hash || '#';
-    return `/${currentPath}`;
-  }
+  const [activeLink, setActiveLink] = useState('/#');
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setActiveLink(window.location.pathname + (window.location.hash || '#'));
+    };
+
+    handleHashChange(); // Set initial active link
+    window.addEventListener('hashchange', handleHashChange);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -64,7 +72,7 @@ export function Header() {
               href={link.href}
               className={cn(
                 'text-sm font-medium transition-colors hover:text-primary',
-                (pathname + (typeof window !== 'undefined' ? window.location.hash : '')) === link.href
+                activeLink === link.href
                   ? 'text-primary'
                   : 'text-muted-foreground'
               )}
@@ -126,7 +134,7 @@ export function Header() {
                       onClick={() => setIsOpen(false)}
                       className={cn(
                         'text-lg font-medium transition-colors hover:text-primary',
-                        (pathname + (typeof window !== 'undefined' ? window.location.hash : '')) === link.href
+                        activeLink === link.href
                           ? 'text-primary'
                           : 'text-muted-foreground'
                       )}
