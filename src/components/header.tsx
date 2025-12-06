@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Phone, LogOut } from 'lucide-react';
+import { Menu, Phone, LogOut, Shield } from 'lucide-react';
 import { Logo } from './logo';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ const navLinks = [
   { href: '/#payment', label: 'Payment' },
   { href: '/review', label: 'Reviews' },
   { href: '/#contact', label: 'Contact' },
+  { href: '/login', label: 'Admin', admin: true },
 ];
 
 export function Header() {
@@ -101,7 +102,13 @@ export function Header() {
 
   const getLinkClass = (href: string) => {
     if (!isClient) return 'text-muted-foreground';
+    
+    // Exact match for non-hash links
+    if (!href.includes('#')) {
+      return pathname === href ? 'text-primary' : 'text-muted-foreground';
+    }
 
+    // Hash link logic for homepage
     if (href.startsWith('/#')) {
         if(pathname !== '/') return 'text-muted-foreground'
         const normalizedHref = href.substring(1); // remove /
@@ -123,7 +130,7 @@ export function Header() {
   };
 
   const renderNavLinks = () => {
-      const links = [...navLinks];
+      const links = navLinks.filter(link => !link.admin || (link.admin && user));
       return links.map(link => (
             <Link
               key={link.href}
@@ -131,16 +138,18 @@ export function Header() {
               onClick={() => isOpen && setIsOpen(false)}
               className={cn(
                 'text-sm font-medium transition-colors hover:text-primary',
-                 getLinkClass(link.href)
+                 getLinkClass(link.href),
+                 link.href === '/login' && 'flex items-center gap-2'
               )}
             >
+              {link.href === '/login' && <Shield className="h-4 w-4" />}
               {link.label}
             </Link>
       ))
   }
   
   const renderMobileNavLinks = () => {
-      const links = [...navLinks];
+      const links = navLinks.filter(link => !link.admin || (link.admin && user));
       return links.map(link => (
             <Link
               key={link.href}

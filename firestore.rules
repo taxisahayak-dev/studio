@@ -38,6 +38,16 @@ service cloud.firestore {
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
+    
+    /**
+     * Checks if the user has an 'admin' role document.
+     * This function is the gatekeeper for all administrative actions.
+     */
+    function isAdmin() {
+      // Check for a document in the roles_admin collection with the user's UID.
+      // This is a secure way to assign permanent admin roles.
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
 
     /**
      * @description Manages all taxi bookings. Customers can create their own, and admins
@@ -48,11 +58,11 @@ service cloud.firestore {
      * @principle Denormalizes `customerId` for efficient ownership checks and admin oversight.
      */
     match /bookings/{bookingId} {
-      allow get: if isSignedIn() && isOwner(resource.data.customerId);
-      allow list: if false;
+      allow get: if isSignedIn() && (isOwner(resource.data.customerId) || isAdmin());
+      allow list: if isSignedIn() && isAdmin();
       allow create: if isSignedIn() && isOwner(request.resource.data.customerId);
-      allow update: if false;
-      allow delete: if false;
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && isAdmin();
     }
 
     /**
@@ -64,11 +74,11 @@ service cloud.firestore {
      * @principle Segregates public-write data from private-read data.
      */
     match /contact_form_submissions/{submissionId} {
-      allow get: if false;
-      allow list: if false;
+      allow get: if isSignedIn() && isAdmin();
+      allow list: if isSignedIn() && isAdmin();
       allow create: if true;
-      allow update: if false;
-      allow delete: if false;
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && isAdmin();
     }
 
     /**
@@ -80,11 +90,11 @@ service cloud.firestore {
      * @principle Enforces a strict path-based ownership model for user data.
      */
     match /customers/{customerId} {
-      allow get: if isOwner(customerId);
-      allow list: if false; // Disallow listing all customers for privacy
+      allow get: if isSignedIn() && (isOwner(customerId) || isAdmin());
+      allow list: if isSignedIn() && isAdmin(); // Admins can list customers
       allow create: if isOwner(customerId) && request.resource.data.id == customerId;
-      allow update: if isOwner(customerId);
-      allow delete: if isOwner(customerId);
+      allow update: if isOwner(customerId) || isAdmin();
+      allow delete: if isOwner(customerId) || isAdmin();
     }
 
     /**
@@ -96,8 +106,18 @@ service cloud.firestore {
       allow get: if true; // Allow anyone to read reviews
       allow list: if true; // Allow anyone to list reviews
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-      allow update: if false;
-      allow delete: if false;
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Collection that defines which users have admin privileges.
+     * @path /roles_admin/{userId}
+     * @allow (read, write) Only accessible to other admins. This prevents non-admins
+     *   from escalating their own privileges.
+     */
+    match /roles_admin/{userId} {
+      allow read, write: if isSignedIn() && isAdmin();
     }
   }
 }

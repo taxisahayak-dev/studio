@@ -1,5 +1,22 @@
 {
   "entities": {
+    "AdminUser": {
+      "title": "Admin User",
+      "description": "Represents an administrator with elevated privileges.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the admin user."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin"],
+          "description": "The role of the user, which must be 'admin'."
+        }
+      },
+      "required": ["uid", "role"]
+    },
     "Booking": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Booking",
@@ -178,7 +195,7 @@
           "schema": {
             "$ref": "#/backend/entities/Booking"
           },
-          "description": "Collection to store all booking requests. Read access is restricted to the customer who created the booking.",
+          "description": "Collection to store all booking requests. Read access is restricted to the creating customer or an admin.",
           "params": [
             {
               "name": "bookingId",
@@ -194,7 +211,7 @@
           "schema": {
             "$ref": "#/backend/entities/ContactFormSubmission"
           },
-          "description": "Collection to store contact form submissions. Read access is restricted.",
+          "description": "Collection to store contact form submissions. Read access is restricted to admins.",
           "params": [
             {
               "name": "submissionId",
@@ -231,6 +248,22 @@
             {
               "name": "reviewId",
               "description": "The unique identifier for the review."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "AdminUser",
+          "schema": {
+            "$ref": "#/backend/entities/AdminUser"
+          },
+          "description": "Stores a list of admin UIDs. The existence of a document with a user's UID grants them admin privileges.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The UID of the user to be granted admin rights."
             }
           ]
         }
