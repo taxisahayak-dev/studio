@@ -87,7 +87,6 @@ function ContactSubmissionsTable() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
               <TableHead>Message</TableHead>
               <TableHead>Date</TableHead>
             </TableRow>
@@ -96,7 +95,6 @@ function ContactSubmissionsTable() {
             {submissions?.map((submission) => (
               <TableRow key={submission.id}>
                 <TableCell>{submission.name}</TableCell>
-                <TableCell>{submission.email}</TableCell>
                 <TableCell className="max-w-xs truncate">{submission.message}</TableCell>
                 <TableCell>
                     {submission.submissionDate?.toDate ? format(submission.submissionDate.toDate(), 'PPP p') : 'Invalid Date'}
