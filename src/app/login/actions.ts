@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { initializeFirebase } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 
 const loginSchema = z.object({
   adminName: z.string(),
