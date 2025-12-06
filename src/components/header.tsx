@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Phone } from 'lucide-react';
+import { Menu, Phone, LogOut } from 'lucide-react';
 import { Logo } from './logo';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
+import { useUser } from '@/firebase';
+import { getAuth, signOut } from 'firebase/auth';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -44,6 +47,7 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
+  const { user } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [activeLink, setActiveLink] = useState('');
   const [isClient, setIsClient] = useState(false);
@@ -53,7 +57,7 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    if (!isClient) return;
+    if (!isClient || pathname !== '/') return;
 
     const handleHashChange = () => {
       setActiveLink(window.location.hash);
@@ -67,7 +71,7 @@ export function Header() {
             if (id) {
                 const newHash = `#${id}`;
                 if(window.location.hash !== newHash) {
-                    history.replaceState(null, '', newHash);
+                    history.replaceState(null, '', `/#${id}`);
                     handleHashChange();
                 }
             }
@@ -92,26 +96,68 @@ export function Header() {
         observer.unobserve(section);
       });
     };
-  }, [isClient]);
+  }, [isClient, pathname]);
 
   const getLinkClass = (href: string) => {
-    if (!isClient) return 'text-muted-foreground';
-
-    const normalizedHref = href.startsWith('/#') ? href.substring(1) : href;
-    const isHomePage = pathname === '/' && (activeLink === '' || activeLink === '#');
-
-    if ((normalizedHref === '#' || normalizedHref === '') && isHomePage) {
-      return 'text-primary';
-    }
+    if (!isClient || pathname !== '/') return 'text-muted-foreground';
     
-    if (activeLink === '' && href === '/#') {
+    const normalizedHref = href.substring(1); // remove /
+    
+    if (activeLink === '' && (normalizedHref === '#' || normalizedHref === '')) {
       return 'text-primary';
     }
 
     return activeLink === normalizedHref ? 'text-primary' : 'text-muted-foreground';
   };
   
+  const handleLogout = async () => {
+    const auth = getAuth();
+    await signOut(auth);
+    // Optionally redirect to home or login page
+  };
+
+  const renderNavLinks = () => {
+      const links = [...navLinks];
+      if(user) {
+          links.push({ href: '/admin', label: 'Admin' });
+      }
+      return links.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => isOpen && setIsOpen(false)}
+              className={cn(
+                'text-sm font-medium transition-colors hover:text-primary',
+                 pathname === link.href ? 'text-primary' : getLinkClass(link.href)
+              )}
+            >
+              {link.label}
+            </Link>
+      ))
+  }
+  
+  const renderMobileNavLinks = () => {
+      const links = [...navLinks];
+      if(user) {
+          links.push({ href: '/admin', label: 'Admin' });
+      }
+      return links.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setIsOpen(false)}
+              className={cn(
+                'text-lg font-medium transition-colors hover:text-primary',
+                pathname === link.href ? 'text-primary' : getLinkClass(link.href)
+              )}
+            >
+              {link.label}
+            </Link>
+      ))
+  }
+
   if (!isClient) {
+    // Render a simplified header on the server to avoid hydration errors
     return (
      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -121,9 +167,7 @@ export function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className={cn(
-                'text-sm font-medium transition-colors hover:text-primary text-muted-foreground'
-              )}
+              className='text-sm font-medium transition-colors hover:text-primary text-muted-foreground'
             >
               {link.label}
             </Link>
@@ -133,9 +177,9 @@ export function Header() {
             <Button variant="outline" size="sm" className="hidden md:flex">
                 Contact Us
             </Button>
-            <Button asChild>
-                <Link href="/#booking">Book a Ride</Link>
-            </Button>
+            <Link href="/#booking" passHref legacyBehavior>
+                <Button asChild><a>Book a Ride</a></Button>
+            </Link>
             <Button variant="outline" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
             </Button>
@@ -151,18 +195,7 @@ export function Header() {
         <Logo />
 
         <nav className="hidden items-center gap-6 md:flex">
-          {navLinks.map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                'text-sm font-medium transition-colors hover:text-primary',
-                getLinkClass(link.href)
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {renderNavLinks()}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -190,12 +223,21 @@ export function Header() {
                   Call Us
                 </a>
               </DropdownMenuItem>
+              {user && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2">
+                    <LogOut />
+                    Logout
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button asChild>
-            <Link href="/#booking">Book a Ride</Link>
-          </Button>
+          <Link href="/#booking" passHref legacyBehavior>
+            <Button asChild><a>Book a Ride</a></Button>
+          </Link>
 
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
@@ -210,26 +252,14 @@ export function Header() {
                   <Logo />
                 </div>
                 <nav className="flex flex-col gap-4">
-                  {navLinks.map(link => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setIsOpen(false)}
-                      className={cn(
-                        'text-lg font-medium transition-colors hover:text-primary',
-                        getLinkClass(link.href)
-                      )}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
+                  {renderMobileNavLinks()}
                 </nav>
                 <div className="mt-6 flex flex-col gap-4">
-                  <Button asChild className="w-full">
-                    <Link href="/#booking" onClick={() => setIsOpen(false)}>
-                      Book a Ride
-                    </Link>
-                  </Button>
+                  <Link href="/#booking" passHref legacyBehavior>
+                    <Button asChild className="w-full" onClick={() => setIsOpen(false)}>
+                      <a>Book a Ride</a>
+                    </Button>
+                  </Link>
                   <Button
                     asChild
                     className="w-full bg-green-500 hover:bg-green-600 text-white"
@@ -253,6 +283,12 @@ export function Header() {
                       Call Us
                     </a>
                   </Button>
+                  {user && (
+                     <Button onClick={() => { handleLogout(); setIsOpen(false); }} className="w-full" variant="destructive">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                      </Button>
+                  )}
                 </div>
               </div>
             </SheetContent>

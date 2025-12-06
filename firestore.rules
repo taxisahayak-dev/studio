@@ -96,7 +96,7 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow get: if isAdmin() || (isSignedIn() && isOwner(resource.data.customerId));
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
+      allow create: if isSignedIn();
       allow update: if isAdmin() && resource != null;
       allow delete: if isAdmin() && resource != null;
     }
