@@ -5,7 +5,7 @@ export const bookingSchema = z.object({
   contact: z.string().regex(/^\+?[1-9]\d{9,14}$/, { message: "Please enter a valid phone number." }),
   pickup: z.string().min(3, { message: "Pickup location is required." }),
   dropoff: z.string().min(3, { message: "Drop-off location is required." }),
-  date: z.date({ required_error: "A date for pickup is required." }),
+  date: z.coerce.date({ required_error: "A date for pickup is required." }),
   time: z.string().min(1, { message: "Pickup time is required." }),
 });
 

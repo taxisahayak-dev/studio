@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { contactSchema } from '@/lib/schemas';
 import { displaySubmissionStatus } from '@/ai/flows/display-submission-status';
 import { v4 as uuidv4 } from 'uuid';
+import { initializeFirebase } from '@/firebase';
+import { addDoc, collection } from 'firebase/firestore';
 
 export async function handleContactSubmission(
   data: z.infer<typeof contactSchema>
@@ -14,9 +16,17 @@ export async function handleContactSubmission(
     return { success: false, message: 'Invalid data provided. Please check your inputs.' };
   }
   
-  // Here you would typically save the data to a database (e.g., Firebase, MongoDB).
-  // For this example, we'll just log it to the console.
-  console.log('New Contact Inquiry:', parsedData.data);
+  try {
+    const { firestore } = initializeFirebase();
+    const contactSubmissionsRef = collection(firestore, 'contact_form_submissions');
+    await addDoc(contactSubmissionsRef, {
+      ...parsedData.data,
+      submissionDate: new Date(),
+    });
+  } catch (error) {
+    console.error('Firestore error:', error);
+    return { success: false, message: 'Could not send your message. Please try again.' };
+  }
 
   try {
     const inquiryId = uuidv4().slice(0, 8).toUpperCase();
