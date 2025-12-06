@@ -59,9 +59,6 @@ export function Header() {
       setActiveLink(window.location.hash);
     };
 
-    handleHashChange(); // Set initial active link
-    window.addEventListener('hashchange', handleHashChange, { passive: true });
-
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -70,9 +67,8 @@ export function Header() {
             if (id) {
                 const newHash = `#${id}`;
                 if(window.location.hash !== newHash) {
-                    // Update hash without triggering scroll
                     history.replaceState(null, '', newHash);
-                    setActiveLink(newHash);
+                    handleHashChange();
                 }
             }
           }
@@ -80,6 +76,11 @@ export function Header() {
       },
       { rootMargin: '-50% 0px -50% 0px' }
     );
+    
+    // Set initial active link on mount
+    handleHashChange();
+    
+    window.addEventListener('hashchange', handleHashChange, { passive: true });
 
     document.querySelectorAll('section[id]').forEach((section) => {
       observer.observe(section);
@@ -97,14 +98,52 @@ export function Header() {
     if (!isClient) return 'text-muted-foreground';
 
     const normalizedHref = href.startsWith('/#') ? href.substring(1) : href;
-    const isHomePage = pathname === '/' && activeLink === '';
+    const isHomePage = pathname === '/' && (activeLink === '' || activeLink === '#');
 
     if ((normalizedHref === '#' || normalizedHref === '') && isHomePage) {
+      return 'text-primary';
+    }
+    
+    if (activeLink === '' && href === '/#') {
       return 'text-primary';
     }
 
     return activeLink === normalizedHref ? 'text-primary' : 'text-muted-foreground';
   };
+  
+  if (!isClient) {
+    return (
+     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between">
+        <Logo />
+         <nav className="hidden items-center gap-6 md:flex">
+          {navLinks.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn(
+                'text-sm font-medium transition-colors hover:text-primary text-muted-foreground'
+              )}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="hidden md:flex">
+                Contact Us
+            </Button>
+            <Button asChild>
+                <Link href="/#booking">Book a Ride</Link>
+            </Button>
+            <Button variant="outline" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+            </Button>
+        </div>
+      </div>
+     </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

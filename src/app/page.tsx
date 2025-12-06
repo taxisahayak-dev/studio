@@ -53,7 +53,7 @@ export default function Home() {
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="relative h-[60vh] w-full md:h-[80vh]">
+      <section id="/" className="relative h-[60vh] w-full md:h-[80vh]">
         {heroImage && (
           <Image
             src={heroImage.imageUrl}
@@ -316,7 +316,7 @@ export default function Home() {
                             <div className="rounded-full bg-accent/10 p-3"><Phone className="h-5 w-5 text-accent" /></div>
                             <div>
                                 <p className="font-semibold text-foreground">Phone</p>
-                                <a href="tel:+917060610430" className="text-muted-foreground hover:text-primary">7060610430</a>
+                                <a href="tel:7060610430" className="text-muted-foreground hover:text-primary">7060610430</a>
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
