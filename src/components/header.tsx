@@ -69,10 +69,6 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button asChild className="hidden md:flex">
-            <Link href="/booking">Book a Ride</Link>
-          </Button>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="hidden md:flex">
@@ -99,6 +95,10 @@ export function Header() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Button asChild className="hidden md:flex">
+            <Link href="/booking">Book a Ride</Link>
+          </Button>
 
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
