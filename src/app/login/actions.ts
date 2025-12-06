@@ -33,8 +33,8 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
       // First, try to sign in.
       await signInWithEmailAndPassword(auth, adminEmail, password);
     } catch (error: any) {
-      // If the user does not exist, create them.
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+      // If the user does not exist (invalid-credential is the code for user not found with email/pass), create them.
+      if (error.code === 'auth/invalid-credential') {
         await createUserWithEmailAndPassword(auth, adminEmail, password);
       } else {
         // For other errors (like wrong password), re-throw to be caught below.
