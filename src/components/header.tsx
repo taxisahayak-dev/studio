@@ -44,7 +44,6 @@ const navLinks = [
   { href: '/#payment', label: 'Payment' },
   { href: '/review', label: 'Reviews' },
   { href: '/#contact', label: 'Contact' },
-  { href: '/login', label: 'Admin', admin: true },
 ];
 
 export function Header() {
@@ -130,7 +129,7 @@ export function Header() {
   };
 
   const renderNavLinks = () => {
-      const links = navLinks.filter(link => !link.admin || (link.admin && user));
+      const links = navLinks;
       return links.map(link => (
             <Link
               key={link.href}
@@ -138,18 +137,16 @@ export function Header() {
               onClick={() => isOpen && setIsOpen(false)}
               className={cn(
                 'text-sm font-medium transition-colors hover:text-primary',
-                 getLinkClass(link.href),
-                 link.href === '/login' && 'flex items-center gap-2'
+                 getLinkClass(link.href)
               )}
             >
-              {link.href === '/login' && <Shield className="h-4 w-4" />}
               {link.label}
             </Link>
       ))
   }
   
   const renderMobileNavLinks = () => {
-      const links = navLinks.filter(link => !link.admin || (link.admin && user));
+      const links = navLinks;
       return links.map(link => (
             <Link
               key={link.href}
