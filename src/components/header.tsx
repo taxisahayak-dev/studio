@@ -118,9 +118,6 @@ export function Header() {
 
   const renderNavLinks = () => {
       const links = [...navLinks];
-      if(user) {
-          links.push({ href: '/admin', label: 'Admin' });
-      }
       return links.map(link => (
             <Link
               key={link.href}
@@ -138,9 +135,6 @@ export function Header() {
   
   const renderMobileNavLinks = () => {
       const links = [...navLinks];
-      if(user) {
-          links.push({ href: '/admin', label: 'Admin' });
-      }
       return links.map(link => (
             <Link
               key={link.href}

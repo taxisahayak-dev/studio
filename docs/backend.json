@@ -96,32 +96,6 @@
       },
       "required": ["displayName"]
     },
-    "AdminUser": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AdminUser",
-      "type": "object",
-      "description": "Represents an admin user who can manage the system.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the admin user."
-        },
-        "username": {
-          "type": "string",
-          "description": "Username of the admin user."
-        },
-        "email": {
-          "type": "string",
-          "description": "Email address of the admin user.",
-          "format": "email"
-        },
-        "role": {
-          "type": "string",
-          "description": "Role of the admin user (e.g., superadmin, editor)."
-        }
-      },
-      "required": ["id", "username", "email", "role"]
-    },
     "Customer": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Customer",
@@ -162,22 +136,6 @@
   },
   "firestore": {
     "structure": [
-      {
-        "path": "/roles_admin/{userId}",
-        "definition": {
-          "entityName": "AdminUser",
-          "schema": {
-            "$ref": "#/backend/entities/AdminUser"
-          },
-          "description": "Collection to store admin users. Existence of a document signifies admin role. This collection is read-only from the client.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the admin user."
-            }
-          ]
-        }
-      },
       {
         "path": "/bookings/{bookingId}",
         "definition": {
