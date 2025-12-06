@@ -35,15 +35,22 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/about', label: 'About' },
-  { href: '/booking', label: 'Booking' },
-  { href: '/payment', label: 'Payment' },
+  { href: '/#', label: 'Home' },
+  { href: '/#about', label: 'About' },
+  { href: '/#booking', label: 'Booking' },
+  { href: '/#payment', label: 'Payment' },
+  { href: '/#contact', label: 'Contact' },
 ];
 
 export function Header() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  
+  const getActiveLink = () => {
+    if (typeof window === 'undefined') return '/#';
+    const currentPath = window.location.hash || '#';
+    return `/${currentPath}`;
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -57,7 +64,7 @@ export function Header() {
               href={link.href}
               className={cn(
                 'text-sm font-medium transition-colors hover:text-primary',
-                pathname === link.href
+                (pathname + (typeof window !== 'undefined' ? window.location.hash : '')) === link.href
                   ? 'text-primary'
                   : 'text-muted-foreground'
               )}
@@ -65,21 +72,10 @@ export function Header() {
               {link.label}
             </Link>
           ))}
-           <Link
-              href="/contact"
-              className={cn(
-                'text-sm font-medium transition-colors hover:text-primary',
-                pathname === "/contact"
-                  ? 'text-primary'
-                  : 'text-muted-foreground'
-              )}
-            >
-              Contact
-            </Link>
         </nav>
 
         <div className="flex items-center gap-2">
-          <DropdownMenu>
+           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="hidden md:flex">
                 Contact Us
@@ -105,9 +101,9 @@ export function Header() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
+          
           <Button asChild className="hidden md:flex">
-            <Link href="/booking">Book a Ride</Link>
+            <Link href="/#booking">Book a Ride</Link>
           </Button>
 
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -130,7 +126,7 @@ export function Header() {
                       onClick={() => setIsOpen(false)}
                       className={cn(
                         'text-lg font-medium transition-colors hover:text-primary',
-                        pathname === link.href
+                        (pathname + (typeof window !== 'undefined' ? window.location.hash : '')) === link.href
                           ? 'text-primary'
                           : 'text-muted-foreground'
                       )}
@@ -138,22 +134,10 @@ export function Header() {
                       {link.label}
                     </Link>
                   ))}
-                  <Link
-                      href="/contact"
-                      onClick={() => setIsOpen(false)}
-                      className={cn(
-                        'text-lg font-medium transition-colors hover:text-primary',
-                        pathname === "/contact"
-                          ? 'text-primary'
-                          : 'text-muted-foreground'
-                      )}
-                    >
-                      Contact
-                    </Link>
                 </nav>
                 <div className="mt-6 flex flex-col gap-4">
                   <Button asChild className="w-full">
-                    <Link href="/booking" onClick={() => setIsOpen(false)}>
+                    <Link href="/#booking" onClick={() => setIsOpen(false)}>
                       Book a Ride
                     </Link>
                   </Button>
