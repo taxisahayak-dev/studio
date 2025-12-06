@@ -5,7 +5,7 @@ import { initializeFirebase } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  adminName: z.string(),
   password: z.string(),
 });
 
@@ -16,9 +16,20 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
     return { success: false, message: 'Invalid data provided.' };
   }
 
+  const { adminName, password } = parsedData.data;
+
+  // For now, we'll use a hardcoded admin username and map it to an email.
+  // In a real application, you would look up the user's email from a database
+  // based on their username.
+  if (adminName !== 'admin') {
+    return { success: false, message: 'Invalid admin name or password.' };
+  }
+
+  const adminEmail = 'admin@example.com';
+
   try {
     const { auth } = initializeFirebase();
-    await signInWithEmailAndPassword(auth, parsedData.data.email, parsedData.data.password);
+    await signInWithEmailAndPassword(auth, adminEmail, password);
     return { success: true };
   } catch (error: any) {
     let message = 'An unexpected error occurred.';
@@ -27,10 +38,10 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
         case 'auth/user-not-found':
         case 'auth/wrong-password':
         case 'auth/invalid-credential':
-          message = 'Invalid email or password.';
+          message = 'Invalid admin name or password.';
           break;
         case 'auth/invalid-email':
-          message = 'Please enter a valid email address.';
+          message = 'The configured admin email is invalid.';
           break;
         default:
           message = 'Login failed. Please try again.';
