@@ -1,0 +1,136 @@
+/**
+ * This ruleset enforces a Role-Based Access Control (RBAC) model combined with
+ * user ownership. Admins are granted broad read and management privileges, while
+ * regular users (customers) have restricted access to their own data.
+ *
+ * Core Philosophy:
+ * The security model is centered around a dedicated `/roles_admin` collection.
+ * The existence of a user's UID as a document ID in this collection grants
+ * them system-wide administrative privileges. All other users are treated as
+ * customers with access scoped strictly to their own information.
+ *
+ * Data Structure:
+ * - /roles_admin/{userId}: Defines which users are administrators.
+ * - /customers/{customerId}: Stores customer-specific data, owned by the customer.
+ * - /bookings/{bookingId}: A central collection of all bookings. Accessible to admins
+ *   and the specific customer who created the booking.
+ * - /contact_form_submissions/{submissionId}: A collection for public contact
+ *   form entries, readable only by admins.
+ *
+ * Key Security Decisions:
+ * - Admin Management: The `/roles_admin` collection is read-only via these rules.
+ *   Admins must be provisioned manually through the Firebase Console or a trusted
+ *   backend service to prevent privilege escalation from the client.
+ * - No User Enumeration: Listing documents in the `/customers` collection is
+ *   explicitly disallowed to protect user privacy.
+ * - Denormalization for Authorization: The `/bookings` documents contain a
+ *   `customerId` field. This is critical for allowing a customer to access their
+ *   own booking without requiring a slow and costly `get()` call in the rule.
+ * - Public Creation, Private Reads: The `/contact_form_submissions` collection
+ *   allows any user (even unauthenticated ones) to create a document, but only
+ *   admins can read or manage the submissions.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the foundation of the user-ownership model.
+     * @param userId The UID to check against the authenticated user.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    /**
+     * Checks for ownership on an existing document. Used for secure updates and deletes.
+     * @param userId The UID of the document owner.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+    
+    /**
+     * Checks if the user has an admin role by verifying the existence of their
+     * UID in the `/roles_admin` collection. This is a performant way to
+     * implement Role-Based Access Control (RBAC).
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * @description Defines admin user roles. Existence of a document here grants admin privileges.
+     *   This collection is read-only to prevent client-side privilege escalation.
+     * @path /roles_admin/{userId}
+     * @allow (get) An admin user checking if another user ('user_abc') has admin rights.
+     * @deny (create) Any user attempting to make themselves an admin.
+     * @principle Implements a secure, lookup-based role system. Writes are forbidden.
+     */
+    match /roles_admin/{userId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Manages all taxi bookings. Customers can create their own, and admins
+     *   can manage all bookings.
+     * @path /bookings/{bookingId}
+     * @allow (create) An authenticated user creating a booking for themselves.
+     * @deny (update) A customer trying to change the status of their own booking.
+     * @principle Denormalizes `customerId` for efficient ownership checks and admin oversight.
+     */
+    match /bookings/{bookingId} {
+      allow get: if isAdmin() || (isSignedIn() && isOwner(resource.data.customerId));
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Stores submissions from the public contact form. Anyone can create one,
+     *   but only administrators can read or manage them.
+     * @path /contact_form_submissions/{submissionId}
+     * @allow (create) An anonymous website visitor submitting the contact form.
+     * @deny (list) An authenticated but non-admin user trying to read all submissions.
+     * @principle Segregates public-write data from private-read data.
+     */
+    match /contact_form_submissions/{submissionId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if true;
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Stores customer data. Each customer can manage their own document,
+     *   and admins have read access for support purposes.
+     * @path /customers/{customerId}
+     * @allow (create) A new user signing up and creating their own customer profile.
+     * @deny (list) Any user, including admins, attempting to list all customers to protect privacy.
+     * @principle Enforces a strict path-based ownership model for user data.
+     */
+    match /customers/{customerId} {
+      allow get: if isOwner(customerId) || isAdmin();
+      allow list: if false;
+      allow create: if isOwner(customerId) && request.resource.data.id == customerId;
+      allow update: if isExistingOwner(customerId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(customerId);
+    }
+  }
+}

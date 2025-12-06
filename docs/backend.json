@@ -1,0 +1,239 @@
+{
+  "entities": {
+    "Booking": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Booking",
+      "type": "object",
+      "description": "Represents a taxi booking request.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the booking entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the person making the booking."
+        },
+        "contact": {
+          "type": "string",
+          "description": "Contact information of the person making the booking."
+        },
+        "pickupPoint": {
+          "type": "string",
+          "description": "Pickup location for the booking."
+        },
+        "dropOffPoint": {
+          "type": "string",
+          "description": "Drop-off location for the booking."
+        },
+        "dateTime": {
+          "type": "string",
+          "description": "Date and time of the booking.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the booking (e.g., pending, confirmed, completed, cancelled)."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Reference to Customer. (Relationship: Customer 1:N Booking)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "contact",
+        "pickupPoint",
+        "dropOffPoint",
+        "dateTime",
+        "status",
+        "customerId"
+      ]
+    },
+    "ContactFormSubmission": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ContactFormSubmission",
+      "type": "object",
+      "description": "Represents a contact form submission.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the contact form submission entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the person submitting the contact form."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the person submitting the contact form.",
+          "format": "email"
+        },
+        "message": {
+          "type": "string",
+          "description": "Message content from the contact form."
+        },
+        "submissionDate": {
+          "type": "string",
+          "description": "Date and time of the contact form submission.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "message",
+        "submissionDate"
+      ]
+    },
+    "AdminUser": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminUser",
+      "type": "object",
+      "description": "Represents an admin user who can manage the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the admin user."
+        },
+        "username": {
+          "type": "string",
+          "description": "Username of the admin user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the admin user.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role of the admin user (e.g., superadmin, editor)."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "role"
+      ]
+    },
+    "Customer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Customer",
+      "type": "object",
+      "description": "Represents a customer of the taxi service.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the customer."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the customer."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the customer."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the customer.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the customer."
+        },
+        "address": {
+          "type": "string",
+          "description": "Address of the customer."
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "phone",
+        "address"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "AdminUser",
+          "schema": {
+            "$ref": "#/backend/entities/AdminUser"
+          },
+          "description": "Collection to store admin users. Existence of a document signifies admin role. Uses path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the admin user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/bookings/{bookingId}",
+        "definition": {
+          "entityName": "Booking",
+          "schema": {
+            "$ref": "#/backend/entities/Booking"
+          },
+          "description": "Collection to store all booking requests.",
+          "params": [
+            {
+              "name": "bookingId",
+              "description": "The unique identifier for the booking."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/contact_form_submissions/{submissionId}",
+        "definition": {
+          "entityName": "ContactFormSubmission",
+          "schema": {
+            "$ref": "#/backend/entities/ContactFormSubmission"
+          },
+          "description": "Collection to store contact form submissions.",
+          "params": [
+            {
+              "name": "submissionId",
+              "description": "The unique identifier for the contact form submission."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}",
+        "definition": {
+          "entityName": "Customer",
+          "schema": {
+            "$ref": "#/backend/entities/Customer"
+          },
+          "description": "Collection to store customer data. Uses path-based ownership.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "The unique identifier for the customer."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure prioritizes security, scalability, and debuggability based on the core design principles.  Authorization Independence is achieved by avoiding `get()` calls in security rules. All authorization-related data is denormalized.  The structure uses path-based ownership for user-related data and a membership map for collaborative data (if applicable). Structural Segregation is enforced by placing documents with similar access control needs in the same collection. QAPs are supported via structural segregation and clear ownership models, ensuring secure `list` operations.\n\nSpecifically, admin users are stored in a dedicated collection `/roles_admin/{uid}`. The existence of a document at this path indicates admin privileges. All bookings are stored in a `/bookings/{bookingId}` collection, and the `customerId` is included in each booking document to enable filtering by customer and simplified security rules. Contact form submissions are stored in a `/contact_form_submissions/{submissionId}` collection, allowing admin users to easily access and manage them. Customers are stored in `/customers/{customerId}`, following the path-based ownership pattern."
+  }
+}
