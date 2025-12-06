@@ -169,7 +169,7 @@
           "schema": {
             "$ref": "#/backend/entities/AdminUser"
           },
-          "description": "Collection to store admin users. Existence of a document signifies admin role. Uses path-based ownership.",
+          "description": "Collection to store admin users. Existence of a document signifies admin role. This collection is read-only from the client.",
           "params": [
             {
               "name": "userId",
@@ -185,7 +185,7 @@
           "schema": {
             "$ref": "#/backend/entities/Booking"
           },
-          "description": "Collection to store all booking requests. Each booking is linked to a customer via `customerId`.",
+          "description": "Collection to store all booking requests. Read access is restricted to admins and the customer who created the booking.",
           "params": [
             {
               "name": "bookingId",
@@ -201,7 +201,7 @@
           "schema": {
             "$ref": "#/backend/entities/ContactFormSubmission"
           },
-          "description": "Collection to store contact form submissions.",
+          "description": "Collection to store contact form submissions. Read access is restricted to admins.",
           "params": [
             {
               "name": "submissionId",
