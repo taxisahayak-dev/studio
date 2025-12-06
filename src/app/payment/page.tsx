@@ -48,7 +48,6 @@ export default function PaymentPage() {
                             width={256}
                             height={256}
                             className="rounded-md object-cover"
-                            data-ai-hint="QR code"
                         />
                     </div>
                 </div>
