@@ -7,6 +7,7 @@ import {
 } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import { getApps, initializeApp } from 'firebase/app';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { firebaseConfig } from '@/firebase/config';
 
 const loginSchema = z.object({
@@ -21,6 +22,7 @@ const app = getApps().length
   : initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 const ADMIN_EMAIL = "nikhilpandit9046@gmail.com";
 const ADMIN_PASSWORD = "nikhil@9948";
@@ -46,10 +48,15 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
     // If sign-in fails because the user account doesn't exist, create it.
     if (error.code === 'auth/invalid-credential') {
       try {
-        await createUserWithEmailAndPassword(auth, email, password);
-        // After creation, sign-in should be automatic via onAuthStateChanged,
-        // but we return success to allow redirection.
-        return { success: true, message: 'Admin account created. Logging in...' };
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // *** THIS IS THE CRITICAL FIX ***
+        // After creating the user, grant them the admin role in Firestore.
+        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+        await setDoc(adminRoleRef, { uid: user.uid, role: 'admin' });
+
+        return { success: true, message: 'Admin account created and permissions granted. Logging in...' };
       } catch (creationError: any) {
         console.error('Firebase Admin Creation Error:', creationError.message);
         return { success: false, message: 'Failed to create admin account.' };
