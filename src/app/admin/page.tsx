@@ -1,12 +1,14 @@
-'use client';
+"use client";
 
+import { useEffect, useState } from "react";
+import { getAuth, onAuthStateChanged }from "firebase/auth";
+import { initializeFirebase } from "@/firebase";
+import { useRouter } from "next/navigation";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Loader2, ShieldCheck, LogOut, PackageOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getAuth, signOut } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { collection, query, orderBy } from 'firebase/firestore';
 import {
   Table,
@@ -19,9 +21,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
-export default function AdminDashboardPage() {
-  const { user, isUserLoading } = useUser();
+
+export default function AdminPanel() {
+  const { auth } = initializeFirebase();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const { user } = useUser();
   const firestore = useFirestore();
 
   const bookingsQuery = useMemoFirebase(() => {
@@ -31,11 +36,16 @@ export default function AdminDashboardPage() {
 
   const { data: bookings, isLoading: isLoadingBookings } = useCollection(bookingsQuery);
 
+
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.replace('/login');
-    }
-  }, [user, isUserLoading, router]);
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push("/login");
+      } else {
+        setLoading(false);
+      }
+    });
+  }, [auth, router]);
 
   const handleLogout = async () => {
     const auth = getAuth();
@@ -43,13 +53,9 @@ export default function AdminDashboardPage() {
     router.push('/login');
   };
 
-  if (isUserLoading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
+  if (loading) return <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
+      </div>;
 
   return (
     <div className="container mx-auto py-12 md:py-20">
@@ -58,9 +64,9 @@ export default function AdminDashboardPage() {
           <div className="space-y-1.5">
             <CardTitle className="font-headline flex items-center gap-2 text-3xl">
               <ShieldCheck className="h-8 w-8 text-primary" />
-              Admin Dashboard
+              Welcome Admin
             </CardTitle>
-            <CardDescription>Welcome, {user.email}</CardDescription>
+            {user && <CardDescription>Signed in as: {user.email}</CardDescription>}
           </div>
           <Button variant="outline" size="sm" onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
@@ -95,8 +101,8 @@ export default function AdminDashboardPage() {
                     <TableRow key={booking.id}>
                       <TableCell className="font-medium">{booking.name}</TableCell>
                       <TableCell>{booking.contact}</TableCell>
-                      <TableCell>{booking.pickup}</TableCell>
-                      <TableCell>{booking.dropoff}</TableCell>
+                      <TableCell>{booking.pickupPoint}</TableCell>
+                      <TableCell>{booking.dropOffPoint}</TableCell>
                       <TableCell>
                         {booking.dateTime ? format(booking.dateTime.toDate(), 'PPP p') : 'N/A'}
                       </TableCell>
