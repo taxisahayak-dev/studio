@@ -1,123 +1,27 @@
-/**
- * This ruleset enforces a Role-Based Access Control (RBAC) model combined with
- * user ownership. Admins are granted broad read and management privileges, while
- * regular users (customers) have restricted access to their own data.
- *
- * Core Philosophy:
- * The security model is centered around a dedicated `/roles_admin` collection.
- * The existence of a user's UID as a document ID in this collection grants
- * them system-wide administrative privileges. All other users are treated as
- * customers with access scoped strictly to their own information.
- *
- * Data Structure:
- * - /roles_admin/{userId}: Defines which users are administrators.
- * - /customers/{customerId}: Stores customer-specific data, owned by the customer.
- * - /bookings/{bookingId}: A central collection of all bookings. Accessible to admins
- *   and the specific customer who created the booking.
- * - /contact_form_submissions/{submissionId}: A collection for public contact
- *   form entries, readable only by admins.
- */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions
-    
-    /**
-     * Checks if the user is authenticated.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    
-    /**
-     * Checks if the currently authenticated user's UID matches the provided userId.
-     * This is the foundation of the user-ownership model.
-     * @param userId The UID to check against the authenticated user.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    /**
-     * Checks if the user has an 'admin' role document.
-     * This function is the gatekeeper for all administrative actions.
-     */
-    function isAdmin() {
-      // Check for a document in the roles_admin collection with the user's UID.
-      // This is a secure way to assign permanent admin roles.
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    // BOOKINGS COLLECTION - ADMIN ONLY
+    match /bookings/{docId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == "9lUgLARr9PYOLQKboZ555BLhDsq2";
     }
 
-    /**
-     * @description Manages all taxi bookings. Customers can create their own, and admins
-     *   can manage all bookings.
-     * @path /bookings/{bookingId}
-     * @allow (create) An authenticated user creating a booking for themselves.
-     * @deny (update) A customer trying to change the status of their own booking.
-     * @principle Denormalizes `customerId` for efficient ownership checks and admin oversight.
-     */
-    match /bookings/{bookingId} {
-      allow get: if isSignedIn() && (isOwner(resource.data.customerId) || isAdmin());
-      allow list: if isSignedIn() && isAdmin();
-      allow create: if isSignedIn() && isOwner(request.resource.data.customerId);
-      allow update: if isSignedIn() && isAdmin();
-      allow delete: if isSignedIn() && isAdmin();
-    }
-
-    /**
-     * @description Stores submissions from the public contact form. Anyone can create one,
-     *   but only administrators can read or manage them.
-     * @path /contact_form_submissions/{submissionId}
-     * @allow (create) An anonymous website visitor submitting the contact form.
-     * @deny (list) An authenticated but non-admin user trying to read all submissions.
-     * @principle Segregates public-write data from private-read data.
-     */
+    // Allow contact form submissions from anyone
     match /contact_form_submissions/{submissionId} {
-      allow get: if isSignedIn() && isAdmin();
-      allow list: if isSignedIn() && isAdmin();
       allow create: if true;
-      allow update: if isSignedIn() && isAdmin();
-      allow delete: if isSignedIn() && isAdmin();
     }
-
-    /**
-     * @description Stores customer data. Each customer can manage their own document,
-     *   and admins have read access for support purposes.
-     * @path /customers/{customerId}
-     * @allow (create) A new user signing up and creating their own customer profile.
-     * @deny (list) Any user, including admins, attempting to list all customers to protect privacy.
-     * @principle Enforces a strict path-based ownership model for user data.
-     */
-    match /customers/{customerId} {
-      allow get: if isSignedIn() && (isOwner(customerId) || isAdmin());
-      allow list: if isSignedIn() && isAdmin(); // Admins can list customers
-      allow create: if isOwner(customerId) && request.resource.data.id == customerId;
-      allow update: if isOwner(customerId) || isAdmin();
-      allow delete: if isOwner(customerId) || isAdmin();
-    }
-
-    /**
-     * @description Stores user reviews. Authenticated users can submit a review.
-     * @path /reviews/{reviewId}
-     * @allow (create) An authenticated user can submit a review.
-     */
+    
+    // Allow review submissions from any signed-in user
     match /reviews/{reviewId} {
-      allow get: if true; // Allow anyone to read reviews
-      allow list: if true; // Allow anyone to list reviews
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-      allow update: if isSignedIn() && isAdmin();
-      allow delete: if isSignedIn() && isAdmin();
+      allow create: if request.auth != null;
     }
 
-    /**
-     * @description Collection that defines which users have admin privileges.
-     * @path /roles_admin/{userId}
-     * @allow (read, write) Only accessible to other admins. This prevents non-admins
-     *   from escalating their own privileges.
-     */
-    match /roles_admin/{userId} {
-      allow read, write: if isSignedIn() && isAdmin();
+    // DEFAULT DENY EVERYTHING ELSE for general access
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
