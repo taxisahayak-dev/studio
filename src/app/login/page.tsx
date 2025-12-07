@@ -24,9 +24,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { handleLogin } from './actions';
 import { Loader2, KeyRound } from 'lucide-react';
 import Link from 'next/link';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { initializeFirebase } from "@/firebase";
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -50,22 +51,39 @@ export default function LoginPage() {
 
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
-    const result = await handleLogin(data);
-    setIsLoading(false);
 
-    if (result.success) {
-      toast({
-        title: 'Login Successful',
-        description: 'Redirecting to the admin dashboard...',
-      });
-      router.push('/admin');
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: result.message,
-      });
+    const ADMIN_EMAIL = "nikhilpandit9046@gmail.com";
+    const ADMIN_PASSWORD = "nikhil@9948";
+
+    if (data.email !== ADMIN_EMAIL || data.password !== ADMIN_PASSWORD) {
+        toast({
+        variant: "destructive",
+        title: "Invalid Credentials",
+        description: "Admin login details are incorrect.",
+        });
+        setIsLoading(false);
+        return;
     }
+
+    try {
+        const { auth } = initializeFirebase();
+        await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
+
+        toast({
+        title: "Login Successful",
+        description: "Redirecting to the admin dashboard...",
+        });
+
+        router.push("/admin");
+    } catch (error: any) {
+        toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: error.message,
+        });
+    }
+
+    setIsLoading(false);
   }
 
   return (
