@@ -26,26 +26,26 @@ export default function AdminPanel() {
   const { auth } = initializeFirebase();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
   const bookingsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null; // Wait for user to be authenticated
     return query(collection(firestore, 'bookings'), orderBy('dateTime', 'desc'));
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: bookings, isLoading: isLoadingBookings } = useCollection(bookingsQuery);
 
 
   useEffect(() => {
-    onAuthStateChanged(auth, (user) => {
+    if (!isUserLoading) {
       if (!user) {
         router.push("/login");
       } else {
         setLoading(false);
       }
-    });
-  }, [auth, router]);
+    }
+  }, [auth, router, user, isUserLoading]);
 
   const handleLogout = async () => {
     const auth = getAuth();
@@ -53,7 +53,7 @@ export default function AdminPanel() {
     router.push('/login');
   };
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center">
+  if (loading || isUserLoading) return <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>;
 
