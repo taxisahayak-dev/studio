@@ -13,7 +13,8 @@ export default function AdminDashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // If loading is finished and there's no user, redirect to login
+    // Wait until the initial loading is complete before checking for a user.
+    // If loading is finished and there is still no user, then redirect.
     if (!isUserLoading && !user) {
       router.replace('/login');
     }
@@ -25,12 +26,19 @@ export default function AdminDashboardPage() {
     router.push('/login');
   };
 
-  if (isUserLoading || !user) {
+  // Display a loading indicator while the user's auth state is being checked.
+  if (isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // If after loading there is no user, this part will not be rendered because of the redirect.
+  // But as a fallback, we can show nothing or a message.
+  if (!user) {
+    return null; // Or a message like "Redirecting..."
   }
 
   return (
