@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Star } from 'lucide-react';
@@ -21,8 +22,13 @@ import { handleReviewSubmission } from './actions';
 import { useUser } from '@/firebase';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { DialogFooter } from '@/components/ui/dialog';
 
-export function ReviewForm() {
+interface ReviewFormProps {
+  onReviewSubmitted?: () => void;
+}
+
+export function ReviewForm({ onReviewSubmitted }: ReviewFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,17 +38,17 @@ export function ReviewForm() {
   const form = useForm<ReviewSchema>({
     resolver: zodResolver(reviewSchema),
     defaultValues: {
-      email: user?.email || '',
+      email: '',
       rating: 0,
       message: '',
     },
-    // Set user email when available
-    values: {
-      email: user?.email || '',
-      rating: 0,
-      message: ''
-    }
   });
+
+  useEffect(() => {
+    if (user) {
+      form.setValue('email', user.email || '');
+    }
+  }, [user, form]);
   
   const currentRating = form.watch('rating');
 
@@ -52,8 +58,9 @@ export function ReviewForm() {
             variant: 'destructive',
             title: 'Authentication Required',
             description: 'You must be logged in to submit a review.',
+            duration: 3000,
         });
-        // Optionally redirect to login page
+        if (onReviewSubmitted) onReviewSubmitted();
         router.push('/login'); 
         return;
     }
@@ -68,6 +75,9 @@ export function ReviewForm() {
         description: 'Thank you for your feedback!',
       });
       form.reset({email: user?.email || '', rating: 0, message: ''});
+      if (onReviewSubmitted) {
+        onReviewSubmitted();
+      }
     } else {
       toast({
         variant: 'destructive',
@@ -79,7 +89,7 @@ export function ReviewForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
         <FormField
           control={form.control}
           name="email"
@@ -132,7 +142,7 @@ export function ReviewForm() {
               <FormControl>
                 <Textarea
                   placeholder="Tell us about your experience..."
-                  className="min-h-[150px]"
+                  className="min-h-[120px]"
                   {...field}
                 />
               </FormControl>
@@ -140,14 +150,16 @@ export function ReviewForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting || isUserLoading}>
-          {isSubmitting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : isUserLoading ? (
-             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : null}
-          {isUserLoading ? 'Loading...' : isSubmitting ? 'Submitting...' : 'Submit Review'}
-        </Button>
+        <DialogFooter>
+            <Button type="submit" className="w-full" disabled={isSubmitting || isUserLoading}>
+            {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : isUserLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            {isUserLoading ? 'Verifying...' : isSubmitting ? 'Submitting...' : 'Submit Review'}
+            </Button>
+        </DialogFooter>
       </form>
     </Form>
   );
