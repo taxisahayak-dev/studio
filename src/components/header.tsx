@@ -41,7 +41,6 @@ const navLinks = [
   { href: '/#', label: 'Home' },
   { href: '/#about', label: 'About' },
   { href: '/#booking', label: 'Booking' },
-  { href: '/#payment', label: 'Payment' },
   { href: '/review', label: 'Reviews' },
   { href: '/#contact', label: 'Contact' },
 ];

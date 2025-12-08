@@ -171,44 +171,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="payment" className="py-12 md:py-20 bg-background">
-        <div className="container mx-auto">
-            <Card className="w-full max-w-4xl shadow-lg mx-auto">
-                <CardHeader className="text-center pb-2">
-                    <CardTitle className="font-headline text-3xl">Pay Online - We Accept all Digital Payment</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid md:grid-cols-2 gap-8 items-center">
-                        <div className="flex flex-col items-center md:items-start text-center md:text-left">
-                            <UpiLogo />
-                            <p className="mt-6 text-lg font-semibold text-foreground">
-                                Pay online 20% booking amount confirmation charge
-                            </p>
-                            <CardDescription className="mt-2">
-                                Scan the QR code with any UPI-enabled app to make the payment. 
-                                Your booking will be confirmed upon successful transaction.
-                            </CardDescription>
-                            <p className="mt-4 text-sm text-muted-foreground">
-                                Thank you for choosing Pandey Taxi Service.
-                            </p>
-                        </div>
-                        <div className="flex flex-col items-center justify-center">
-                            <div className="relative h-64 w-64 rounded-lg border bg-muted/50 p-4">
-                                <Image
-                                    src="/qr-code.png"
-                                    alt="QR Code for payment"
-                                    width={256}
-                                    height={256}
-                                    className="rounded-md object-cover"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-      </section>
-
       <section id="about" className="py-12 md:py-20">
         <div className="container mx-auto">
             <div className="text-center">
