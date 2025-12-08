@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -45,9 +46,9 @@ export default function AdminPanel() {
   const firestore = useFirestore();
 
   const bookingsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null; // Wait for user to be authenticated
     return query(collection(firestore, 'bookings'), orderBy('dateTime', 'desc'));
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: bookings, isLoading: isLoadingBookings } = useCollection(bookingsQuery);
 
