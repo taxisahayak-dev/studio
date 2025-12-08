@@ -3,11 +3,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useAuth } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Loader2, ShieldCheck, LogOut, PackageOpen, PackageCheck, Package, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { collection, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 import {
   Table,
   TableHeader,
@@ -38,7 +39,7 @@ const ADMIN_EMAIL = "nikhilpandit9046@gmail.com";
 export default function AdminPanelContent() {
   const router = useRouter();
   const { toast } = useToast();
-  
+  const auth = useAuth();
   const firestore = useFirestore();
 
   const bookingsQuery = useMemo(() => {
@@ -64,8 +65,8 @@ export default function AdminPanelContent() {
     }) || [];
   }, [bookings, twoMonthsAgo]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAdmin");
+  const handleLogout = async () => {
+    await signOut(auth);
     router.push('/login');
   };
 

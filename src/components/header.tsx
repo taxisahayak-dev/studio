@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -43,9 +45,12 @@ const navLinks = [
   { href: '/#contact', label: 'Contact' },
 ];
 
+const ADMIN_EMAIL = "nikhilpandit9046@gmail.com";
+
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const auth = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [activeLink, setActiveLink] = useState('');
   const [isClient, setIsClient] = useState(false);
@@ -53,8 +58,11 @@ export function Header() {
 
   useEffect(() => {
     setIsClient(true);
-    setIsAdmin(localStorage.getItem('isAdmin') === 'true');
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setIsAdmin(!!user && user.email === ADMIN_EMAIL);
+    });
+    return () => unsubscribe();
+  }, [auth]);
 
   useEffect(() => {
     if (!isClient || pathname !== '/') return;
@@ -121,9 +129,8 @@ export function Header() {
     return pathname === href ? 'text-primary' : 'text-muted-foreground'
   };
   
-  const handleLogout = () => {
-    localStorage.removeItem('isAdmin');
-    setIsAdmin(false);
+  const handleLogout = async () => {
+    await signOut(auth);
     router.push('/login');
   };
 

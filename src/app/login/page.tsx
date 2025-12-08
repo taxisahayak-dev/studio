@@ -13,49 +13,59 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, KeyRound } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/firebase';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 
 const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(1),
+  password: z.string().min(1, 'Password is required'),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-// Hardcoded admin credentials
 const ADMIN_EMAIL = "nikhilpandit9046@gmail.com";
-const ADMIN_PASSWORD = "nikhil@9948"; 
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const auth = useAuth();
 
   useEffect(() => {
     setIsClient(true);
-    if (localStorage.getItem("isAdmin") === "true") {
-      router.replace('/admin');
-    }
-  }, [router]);
+    // Redirect if user is already logged in and is the admin
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && user.email === ADMIN_EMAIL) {
+        router.replace('/admin');
+      }
+    });
+    return () => unsubscribe();
+  }, [auth, router]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-
-    setTimeout(() => { // simulate server delay
-      if (data.email === ADMIN_EMAIL && data.password === ADMIN_PASSWORD) {
-        localStorage.setItem("isAdmin", "true"); // set admin session locally
-        toast({ title: "Login Successful", description: "Redirecting to dashboard..." });
-        router.push("/admin");
-      } else {
-        toast({ variant: "destructive", title: "Login Failed", description: "Invalid credentials" });
+    
+    if (data.email !== ADMIN_EMAIL) {
+        toast({ variant: "destructive", title: "Login Failed", description: "Invalid credentials." });
         setIsLoading(false);
-      }
-    }, 500);
+        return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+      toast({ title: "Login Successful", description: "Redirecting to dashboard..." });
+      // The useEffect with onAuthStateChanged will handle the redirect
+      router.push("/admin");
+    } catch (error) {
+      toast({ variant: "destructive", title: "Login Failed", description: "Invalid credentials." });
+      setIsLoading(false);
+    }
   };
   
   if (!isClient) {
