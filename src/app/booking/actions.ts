@@ -6,7 +6,7 @@ import { bookingSchema } from '@/lib/schemas';
 import { displaySubmissionStatus } from '@/ai/flows/display-submission-status';
 import { v4 as uuidv4 } from 'uuid';
 import { initializeFirebase } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, Timestamp } from 'firebase/firestore';
 
 export async function handleBookingSubmission(
   data: z.infer<typeof bookingSchema>
@@ -21,11 +21,20 @@ export async function handleBookingSubmission(
     const { firestore } = initializeFirebase();
 
     const bookingRef = collection(firestore, 'bookings');
+    
+    // Combine date and time
+    const [hours, minutes] = parsedData.data.pickupTime.split(':');
+    const pickupDateTime = new Date(); // Using today's date, can be adjusted if a date picker is added
+    pickupDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+
     await addDoc(bookingRef, {
-      ...parsedData.data,
-      dateTime: new Date(parsedData.data.date + 'T' + parsedData.data.time),
+      name: parsedData.data.name,
+      contact: parsedData.data.contactNumber,
+      pickupPoint: parsedData.data.pickupLocation,
+      dropOffPoint: 'N/A', // Not in the new form
+      dateTime: Timestamp.fromDate(pickupDateTime),
       status: 'pending',
-      customerId: null, // Set customerId to null for anonymous bookings
+      customerId: null,
     });
 
   } catch (error) {

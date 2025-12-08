@@ -1,12 +1,11 @@
+
 import { z } from 'zod';
 
 export const bookingSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  contact: z.string().regex(/^\+?[1-9]\d{9,14}$/, { message: "Please enter a valid phone number." }),
-  pickup: z.string().min(3, { message: "Pickup location is required." }),
-  dropoff: z.string().min(3, { message: "Drop-off location is required." }),
-  date: z.coerce.date({ required_error: "A date for pickup is required." }),
-  time: z.string().min(1, { message: "Pickup time is required." }),
+  name: z.string().min(2, { message: "Name is required and must be at least 2 characters." }),
+  contactNumber: z.string().min(10, { message: "A valid contact number is required." }),
+  pickupLocation: z.string().min(3, { message: "Pickup location is required." }),
+  pickupTime: z.string().min(1, { message: "Pickup time is required." }),
 });
 
 export type BookingSchema = z.infer<typeof bookingSchema>;

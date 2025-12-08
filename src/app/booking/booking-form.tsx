@@ -1,79 +1,53 @@
+
 'use client';
 
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { initializeFirebase, useFirestore } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { MapPin } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { bookingSchema, type BookingSchema } from '@/lib/schemas';
+import { handleBookingSubmission } from './actions';
 
 export function BookingForm() {
   const { toast } = useToast();
-  const firestore = useFirestore();
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [slot, setSlot] = useState('');
-  const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<BookingSchema>({
+    resolver: zodResolver(bookingSchema),
+    defaultValues: {
+      name: '',
+      contactNumber: '',
+      pickupLocation: '',
+      pickupTime: '',
+    },
+  });
+
+  async function onSubmit(data: BookingSchema) {
     setIsSubmitting(true);
+    const result = await handleBookingSubmission(data);
+    setIsSubmitting(false);
 
-    if (!firestore) {
+    if (result.success && result.message) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Firestore is not initialized.",
+        title: 'Booking Submitted!',
+        description: result.message,
       });
-      setIsSubmitting(false);
-      return;
+      form.reset();
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Submission Failed',
+        description: result.message || 'An unexpected error occurred.',
+      });
     }
-
-    try {
-      await addDoc(collection(firestore, "bookings"), {
-        name,
-        contact: phone, // Assuming phone is the contact
-        pickupPoint: 'N/A', // From your new fields, pickup/dropoff are not there
-        dropOffPoint: 'N/A',
-        dateTime: new Date(), // Using current date as per your new handler
-        status: 'pending',
-        customerId: null,
-        email: email, // added from your new fields
-        slot: slot, // added from your new fields
-        message: message, // added from your new fields
-        createdAt: new Date(),
-      });
-
-      toast({
-        title: "Booking Submitted!",
-        description: "We will get back to you shortly.",
-      });
-      // Reset form
-      setName('');
-      setEmail('');
-      setPhone('');
-      setSlot('');
-      setMessage('');
-
-    } catch (error) {
-      console.log("Error saving booking:", error);
-      toast({
-        variant: "destructive",
-        title: "Submission failed",
-        description: "Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  }
 
   return (
     <Card className="w-full max-w-2xl shadow-lg">
@@ -87,35 +61,69 @@ export function BookingForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="slot">Preferred Slot (e.g., "Morning", "4:00 PM")</Label>
-            <Input id="slot" value={slot} onChange={(e) => setSlot(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="message">Message (Optional)</Label>
-            <Textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} />
-          </div>
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Submit Booking
-          </Button>
-           <p className="text-center text-sm text-muted-foreground">
-            After confirming your booking, we recommend calling us for further details.
-        </p>
-        </form>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <Label>Full Name <span className="text-destructive">*</span></Label>
+                  <FormControl>
+                    <Input placeholder="Enter your full name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="contactNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <Label>Contact Number <span className="text-destructive">*</span></Label>
+                  <FormControl>
+                    <Input type="tel" placeholder="Enter your contact number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="pickupLocation"
+              render={({ field }) => (
+                <FormItem>
+                  <Label>Pickup Location <span className="text-destructive">*</span></Label>
+                  <FormControl>
+                    <Input placeholder="Enter pickup address" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="pickupTime"
+              render={({ field }) => (
+                <FormItem>
+                  <Label>Pickup Time <span className="text-destructive">*</span></Label>
+                  <FormControl>
+                    <Input type="time" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Submit Booking
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              After confirming your booking, we recommend calling us for further details.
+            </p>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );
