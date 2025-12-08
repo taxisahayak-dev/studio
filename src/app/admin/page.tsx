@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getAuth, onAuthStateChanged }from "firebase/auth";
 import { initializeFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Loader2, ShieldCheck, LogOut, PackageOpen } from 'lucide-react';
+import { Loader2, ShieldCheck, LogOut, PackageOpen, PackageCheck, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
 import { collection, query, orderBy } from 'firebase/firestore';
@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 
 export default function AdminPanel() {
@@ -35,6 +36,14 @@ export default function AdminPanel() {
   }, [firestore, user]);
 
   const { data: bookings, isLoading: isLoadingBookings } = useCollection(bookingsQuery);
+
+  const receivedBookings = useMemo(() => {
+    return bookings?.filter(b => b.status === 'pending' || b.status === 'confirmed') || [];
+  }, [bookings]);
+
+  const completedBookings = useMemo(() => {
+    return bookings?.filter(b => b.status === 'completed') || [];
+  }, [bookings]);
 
 
   useEffect(() => {
@@ -56,6 +65,64 @@ export default function AdminPanel() {
   if (loading || isUserLoading) return <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>;
+      
+  const renderBookingsTable = (data: typeof bookings) => {
+    if (!data || data.length === 0) return null;
+    return (
+        <div className="overflow-x-auto rounded-md border">
+        <Table>
+            <TableHeader>
+            <TableRow>
+                <TableHead>Customer</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Pickup</TableHead>
+                <TableHead>Drop-off</TableHead>
+                <TableHead>Date & Time</TableHead>
+                <TableHead className="text-right">Status</TableHead>
+            </TableRow>
+            </TableHeader>
+            <TableBody>
+            {data.map((booking) => (
+                <TableRow key={booking.id}>
+                <TableCell className="font-medium">{booking.name}</TableCell>
+                <TableCell>{booking.contact}</TableCell>
+                <TableCell>{booking.pickupPoint}</TableCell>
+                <TableCell>{booking.dropOffPoint}</TableCell>
+                <TableCell>
+                    {booking.dateTime ? format(booking.dateTime.toDate(), 'PPP p') : 'N/A'}
+                </TableCell>
+                <TableCell className="text-right">
+                    <Badge
+                    variant={
+                        booking.status === 'confirmed'
+                        ? 'default'
+                        : booking.status === 'completed'
+                        ? 'secondary'
+                        : 'outline'
+                    }
+                    >
+                    {booking.status}
+                    </Badge>
+                </TableCell>
+                </TableRow>
+            ))}
+            </TableBody>
+        </Table>
+        </div>
+    )
+  }
+
+  const renderEmptyState = (title: string, description: string, icon: React.ReactNode) => {
+    return (
+        <div className="flex flex-col items-center justify-center rounded-md border-2 border-dashed py-16 text-center">
+            {icon}
+            <h3 className="mt-4 text-lg font-semibold text-foreground">{title}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+                {description}
+            </p>
+        </div>
+    )
+  }
 
   return (
     <div className="container mx-auto py-12 md:py-20">
@@ -64,7 +131,7 @@ export default function AdminPanel() {
           <div className="space-y-1.5">
             <CardTitle className="font-headline flex items-center gap-2 text-3xl">
               <ShieldCheck className="h-8 w-8 text-primary" />
-              Welcome Admin
+              Admin Dashboard
             </CardTitle>
             {user && <CardDescription>Signed in as: {user.email}</CardDescription>}
           </div>
@@ -74,67 +141,38 @@ export default function AdminPanel() {
           </Button>
         </CardHeader>
         <CardContent>
-          <h2 className="mb-4 font-headline text-2xl font-semibold text-foreground">
-            Recent Bookings
-          </h2>
-          {isLoadingBookings && (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          )}
-
-          {!isLoadingBookings && bookings && bookings.length > 0 && (
-            <div className="overflow-x-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Pickup</TableHead>
-                    <TableHead>Drop-off</TableHead>
-                    <TableHead>Date & Time</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bookings.map((booking) => (
-                    <TableRow key={booking.id}>
-                      <TableCell className="font-medium">{booking.name}</TableCell>
-                      <TableCell>{booking.contact}</TableCell>
-                      <TableCell>{booking.pickupPoint}</TableCell>
-                      <TableCell>{booking.dropOffPoint}</TableCell>
-                      <TableCell>
-                        {booking.dateTime ? format(booking.dateTime.toDate(), 'PPP p') : 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Badge
-                          variant={
-                            booking.status === 'confirmed'
-                              ? 'default'
-                              : booking.status === 'completed'
-                              ? 'secondary'
-                              : 'outline'
-                          }
-                        >
-                          {booking.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-
-          {!isLoadingBookings && (!bookings || bookings.length === 0) && (
-            <div className="flex flex-col items-center justify-center rounded-md border-2 border-dashed py-16 text-center">
-                <PackageOpen className="h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold text-foreground">No Bookings Found</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    There are currently no bookings to display. New bookings will appear here.
-                </p>
-            </div>
-          )}
+            <Tabs defaultValue="received" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="received">Received Bookings</TabsTrigger>
+                    <TabsTrigger value="completed">Completed Bookings</TabsTrigger>
+                </TabsList>
+                <TabsContent value="received" className="mt-6">
+                    {isLoadingBookings && (
+                        <div className="flex items-center justify-center py-10">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    )}
+                    {!isLoadingBookings && receivedBookings.length > 0 && renderBookingsTable(receivedBookings)}
+                    {!isLoadingBookings && receivedBookings.length === 0 && renderEmptyState(
+                        "No Received Bookings",
+                        "New and confirmed bookings will appear here.",
+                        <Package className="h-12 w-12 text-muted-foreground" />
+                    )}
+                </TabsContent>
+                <TabsContent value="completed" className="mt-6">
+                     {isLoadingBookings && (
+                        <div className="flex items-center justify-center py-10">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    )}
+                    {!isLoadingBookings && completedBookings.length > 0 && renderBookingsTable(completedBookings)}
+                    {!isLoadingBookings && completedBookings.length === 0 && renderEmptyState(
+                        "No Completed Bookings",
+                        "Bookings marked as 'completed' will appear here.",
+                        <PackageCheck className="h-12 w-12 text-muted-foreground" />
+                    )}
+                </TabsContent>
+            </Tabs>
         </CardContent>
       </Card>
     </div>
