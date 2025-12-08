@@ -53,8 +53,8 @@ export default function AdminPanelContent() {
     return query(collection(firestore, "reviews"), orderBy("submissionDate", "desc"));
   }, [firestore]);
 
-  const { data: bookings, isLoading: isLoadingBookings } = useCollection(bookingsQuery);
-  const { data: reviews, isLoading: isLoadingReviews } = useCollection(reviewsQuery);
+  const { data: bookings, isLoading: isLoadingBookings, error: bookingsError } = useCollection(bookingsQuery);
+  const { data: reviews, isLoading: isLoadingReviews, error: reviewsError } = useCollection(reviewsQuery);
 
   const receivedBookings = useMemo(() => {
     return bookings?.filter(b => b.status === 'pending' || b.status === 'confirmed') || [];
@@ -133,6 +133,8 @@ export default function AdminPanelContent() {
       });
     }
   };
+  
+  const isLoading = isLoadingBookings || isLoadingReviews;
 
   const renderBookingsTable = (data: typeof bookings, isReceivedTable: boolean) => {
     if (!data || data.length === 0) return null;
@@ -324,39 +326,39 @@ export default function AdminPanelContent() {
                     <TabsTrigger value="reviews">Customer Reviews</TabsTrigger>
                 </TabsList>
                 <TabsContent value="received" className="mt-6">
-                    {isLoadingBookings && (
+                    {isLoading && (
                         <div className="flex items-center justify-center py-10">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     )}
-                    {!isLoadingBookings && receivedBookings.length > 0 && renderBookingsTable(receivedBookings, true)}
-                    {!isLoadingBookings && receivedBookings.length === 0 && renderEmptyState(
+                    {!isLoading && receivedBookings.length > 0 && renderBookingsTable(receivedBookings, true)}
+                    {!isLoading && receivedBookings.length === 0 && renderEmptyState(
                         "No Received Bookings",
                         "New and confirmed bookings will appear here.",
                         <Package className="h-12 w-12 text-muted-foreground" />
                     )}
                 </TabsContent>
                 <TabsContent value="completed" className="mt-6">
-                     {isLoadingBookings && (
+                     {isLoading && (
                         <div className="flex items-center justify-center py-10">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     )}
-                    {!isLoadingBookings && completedBookings.length > 0 && renderBookingsTable(completedBookings, false)}
-                    {!isLoadingBookings && completedBookings.length === 0 && renderEmptyState(
+                    {!isLoading && completedBookings.length > 0 && renderBookingsTable(completedBookings, false)}
+                    {!isLoading && completedBookings.length === 0 && renderEmptyState(
                         "No Completed Bookings",
                         "Completed bookings from the last two months will appear here.",
                         <PackageCheck className="h-12 w-12 text-muted-foreground" />
                     )}
                 </TabsContent>
                 <TabsContent value="reviews" className="mt-6">
-                    {isLoadingReviews && (
+                    {isLoading && (
                         <div className="flex items-center justify-center py-10">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     )}
-                    {!isLoadingReviews && reviews && reviews.length > 0 && renderReviewsTable(reviews)}
-                    {!isLoadingReviews && (!reviews || reviews.length === 0) && renderEmptyState(
+                    {!isLoading && reviews && reviews.length > 0 && renderReviewsTable(reviews)}
+                    {!isLoading && (!reviews || reviews.length === 0) && renderEmptyState(
                         "No Customer Reviews",
                         "New reviews submitted by customers will appear here.",
                         <MessageSquare className="h-12 w-12 text-muted-foreground" />
