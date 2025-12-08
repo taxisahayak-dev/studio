@@ -18,6 +18,15 @@ service cloud.firestore {
         && request.auth.token.email == "nikhilpandit9046@gmail.com";
     }
 
+    // REVIEWS: Anyone can create. Admin can read/delete.
+    match /reviews/{docId} {
+      allow create: if true;
+      allow list, get, delete: if request.auth != null 
+        && request.auth.token.email == "nikhilpandit9046@gmail.com";
+      // Public read access for the reviews page
+      allow list, get: if request.auth == null || request.auth.token.email != "nikhilpandit9046@gmail.com";
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

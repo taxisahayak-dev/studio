@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFirestore, useCollection, useAuth } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Loader2, ShieldCheck, LogOut, PackageOpen, PackageCheck, Package, Check, Trash2 } from 'lucide-react';
+import { Loader2, ShieldCheck, LogOut, PackageOpen, PackageCheck, Package, Check, Trash2, Star, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { collection, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -17,8 +17,9 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast";
 import { subMonths } from 'date-fns';
@@ -47,7 +48,13 @@ export default function AdminPanelContent() {
     return query(collection(firestore, "bookings"), orderBy("dateTime", "desc"));
   }, [firestore]);
 
+  const reviewsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "reviews"), orderBy("submissionDate", "desc"));
+  }, [firestore]);
+
   const { data: bookings, isLoading: isLoadingBookings } = useCollection(bookingsQuery);
+  const { data: reviews, isLoading: isLoadingReviews } = useCollection(reviewsQuery);
 
   const receivedBookings = useMemo(() => {
     return bookings?.filter(b => b.status === 'pending' || b.status === 'confirmed') || [];
@@ -107,6 +114,25 @@ export default function AdminPanelContent() {
         });
     }
   }
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!firestore) return;
+    try {
+      const reviewRef = doc(firestore, 'reviews', reviewId);
+      await deleteDoc(reviewRef);
+      toast({
+        title: "Review Deleted",
+        description: "The review has been successfully removed.",
+      });
+    } catch (error) {
+      console.error("Error deleting review: ", error);
+      toast({
+        variant: "destructive",
+        title: "Deletion Failed",
+        description: "Could not delete the review.",
+      });
+    }
+  };
 
   const renderBookingsTable = (data: typeof bookings, isReceivedTable: boolean) => {
     if (!data || data.length === 0) return null;
@@ -193,6 +219,75 @@ export default function AdminPanelContent() {
     )
   }
 
+  const renderReviewsTable = (data: typeof reviews) => {
+    if (!data || data.length === 0) return null;
+    return (
+      <div className="overflow-x-auto rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Customer</TableHead>
+              <TableHead>Rating</TableHead>
+              <TableHead>Message</TableHead>
+              <TableHead>Submitted</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((review) => (
+              <TableRow key={review.id}>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback>{review.email.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span className="truncate">{review.email}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                    <span className="font-medium">{review.rating}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="max-w-xs truncate">{review.message}</TableCell>
+                <TableCell>
+                  {review.submissionDate
+                    ? formatDistanceToNow(review.submissionDate.toDate(), { addSuffix: true })
+                    : 'N/A'}
+                </TableCell>
+                <TableCell className="text-right">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete this review.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDeleteReview(review.id)}>
+                          Continue
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
   const renderEmptyState = (title: string, description: string, icon: React.ReactNode) => {
     return (
         <div className="flex flex-col items-center justify-center rounded-md border-2 border-dashed py-16 text-center">
@@ -223,9 +318,10 @@ export default function AdminPanelContent() {
         </CardHeader>
         <CardContent>
             <Tabs defaultValue="received" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="received">Received Bookings</TabsTrigger>
                     <TabsTrigger value="completed">Completed Bookings</TabsTrigger>
+                    <TabsTrigger value="reviews">Customer Reviews</TabsTrigger>
                 </TabsList>
                 <TabsContent value="received" className="mt-6">
                     {isLoadingBookings && (
@@ -251,6 +347,19 @@ export default function AdminPanelContent() {
                         "No Completed Bookings",
                         "Completed bookings from the last two months will appear here.",
                         <PackageCheck className="h-12 w-12 text-muted-foreground" />
+                    )}
+                </TabsContent>
+                <TabsContent value="reviews" className="mt-6">
+                    {isLoadingReviews && (
+                        <div className="flex items-center justify-center py-10">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    )}
+                    {!isLoadingReviews && reviews && reviews.length > 0 && renderReviewsTable(reviews)}
+                    {!isLoadingReviews && (!reviews || reviews.length === 0) && renderEmptyState(
+                        "No Customer Reviews",
+                        "New reviews submitted by customers will appear here.",
+                        <MessageSquare className="h-12 w-12 text-muted-foreground" />
                     )}
                 </TabsContent>
             </Tabs>
