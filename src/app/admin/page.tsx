@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { initializeFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useUser } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Loader2, ShieldCheck, LogOut, PackageOpen, PackageCheck, Package, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,24 +41,20 @@ export default function AdminPanel() {
   const { auth } = initializeFirebase();
   const router = useRouter();
   const { toast } = useToast();
+  const { user, isUserLoading } = useUser();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
-  const firestore = useFirestore();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) {
-        router.replace("/login");
-      } else if (currentUser.email === "nikhilpandit9046@gmail.com") {
-        setUser(currentUser);
+    if (!isUserLoading) {
+      if (user && user.email === "nikhilpandit9046@gmail.com") {
         setLoading(false);
       } else {
-        router.replace("/login");
+        router.replace('/login');
       }
-    });
+    }
+  }, [user, isUserLoading, router]);
 
-    return () => unsubscribe();
-  }, [auth, router]);
+  const firestore = useFirestore();
 
   const bookingsQuery = useMemo(() => {
     if (!firestore || loading) return null; // wait until admin session verified
@@ -128,14 +124,14 @@ export default function AdminPanel() {
   }
 
 
-  if (loading) {
+  if (loading || isUserLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
-      
+
   const renderBookingsTable = (data: typeof bookings, isReceivedTable: boolean) => {
     if (!data || data.length === 0) return null;
     return (
@@ -287,3 +283,5 @@ export default function AdminPanel() {
     </div>
   );
 }
+
+    
