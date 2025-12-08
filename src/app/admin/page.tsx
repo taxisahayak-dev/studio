@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { initializeFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Loader2, ShieldCheck, LogOut, PackageOpen, PackageCheck, Package, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -60,10 +60,10 @@ export default function AdminPanel() {
     return () => unsubscribe();
   }, [auth, router]);
 
-  const bookingsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'bookings'), orderBy('dateTime', 'desc'));
-  }, [firestore, user]);
+  const bookingsQuery = useMemo(() => {
+    if (!firestore || loading) return null; // wait until admin session verified
+    return query(collection(firestore, "bookings"), orderBy("dateTime", "desc"));
+  }, [firestore, loading]);
 
   const { data: bookings, isLoading: isLoadingBookings } = useCollection(bookingsQuery);
 
