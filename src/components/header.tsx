@@ -235,33 +235,6 @@ export function Header() {
           <Button asChild>
             <Link href="/#booking">Book a Ride</Link>
           </Button>
-          
-          {user && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
-                        <UserCircle className="h-6 w-6" />
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                     <Link href="/admin" className="flex items-center gap-2">
-                      <Shield />
-                      Admin Panel
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2">
-                    <LogOut />
-                    Logout
-                  </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
 
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
