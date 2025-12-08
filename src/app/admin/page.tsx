@@ -46,11 +46,11 @@ export default function AdminPanel() {
   const firestore = useFirestore();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (!currentUser) {
         router.replace("/login");
-      } else if (user.email === "nikhilpandit9046@gmail.com") {
-        setUser(user);
+      } else if (currentUser.email === "nikhilpandit9046@gmail.com") {
+        setUser(currentUser);
         setLoading(false);
       } else {
         router.replace("/login");
@@ -128,9 +128,13 @@ export default function AdminPanel() {
   }
 
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center">
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>;
+      </div>
+    );
+  }
       
   const renderBookingsTable = (data: typeof bookings, isReceivedTable: boolean) => {
     if (!data || data.length === 0) return null;
