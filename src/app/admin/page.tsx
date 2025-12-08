@@ -6,10 +6,10 @@ import { initializeFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Loader2, ShieldCheck, LogOut, PackageOpen, PackageCheck, Package, Check } from 'lucide-react';
+import { Loader2, ShieldCheck, LogOut, PackageOpen, PackageCheck, Package, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
-import { collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, where, Timestamp, deleteDoc } from 'firebase/firestore';
 import {
   Table,
   TableHeader,
@@ -22,6 +22,18 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast";
+import { subMonths } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 
 export default function AdminPanel() {
@@ -43,9 +55,18 @@ export default function AdminPanel() {
     return bookings?.filter(b => b.status === 'pending' || b.status === 'confirmed') || [];
   }, [bookings]);
 
+  const twoMonthsAgo = useMemo(() => subMonths(new Date(), 2), []);
+
   const completedBookings = useMemo(() => {
-    return bookings?.filter(b => b.status === 'completed') || [];
-  }, [bookings]);
+    return bookings?.filter(b => {
+        if (b.status !== 'completed') return false;
+        // Ensure dateTime exists and is a Firestore Timestamp before converting
+        if (b.dateTime && typeof b.dateTime.toDate === 'function') {
+            return b.dateTime.toDate() > twoMonthsAgo;
+        }
+        return false; // Exclude if dateTime is not a valid Timestamp
+    }) || [];
+  }, [bookings, twoMonthsAgo]);
 
 
   useEffect(() => {
@@ -83,6 +104,26 @@ export default function AdminPanel() {
     }
   }
 
+  const handleDeleteBooking = async (bookingId: string) => {
+    if (!firestore) return;
+    try {
+        const bookingRef = doc(firestore, 'bookings', bookingId);
+        await deleteDoc(bookingRef);
+        toast({
+            title: "Booking Deleted",
+            description: "The booking has been successfully removed.",
+        });
+    } catch(error) {
+        console.error("Error deleting booking: ", error);
+        toast({
+            variant: "destructive",
+            title: "Deletion Failed",
+            description: "Could not delete the booking.",
+        });
+    }
+  }
+
+
   if (loading || isUserLoading) return <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>;
@@ -100,7 +141,7 @@ export default function AdminPanel() {
                 <TableHead>Drop-off</TableHead>
                 <TableHead>Date & Time</TableHead>
                 <TableHead>Status</TableHead>
-                {isReceivedTable && <TableHead className="text-right">Actions</TableHead>}
+                <TableHead className="text-right">Actions</TableHead>
             </TableRow>
             </TableHeader>
             <TableBody>
@@ -126,23 +167,44 @@ export default function AdminPanel() {
                     {booking.status}
                     </Badge>
                 </TableCell>
-                {isReceivedTable && (
-                    <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                            {booking.status === 'pending' && (
-                                <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(booking.id, 'confirmed')}>
-                                    <Check className="mr-2 h-4 w-4" />
-                                    Confirm
-                                </Button>
-                            )}
-                            {(booking.status === 'pending' || booking.status === 'confirmed') && (
-                                <Button variant="secondary" size="sm" onClick={() => handleUpdateStatus(booking.id, 'completed')}>
-                                    Mark as Completed
-                                </Button>
-                            )}
-                        </div>
-                    </TableCell>
-                )}
+                <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                        {isReceivedTable && booking.status === 'pending' && (
+                            <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(booking.id, 'confirmed')}>
+                                <Check className="mr-2 h-4 w-4" />
+                                Confirm
+                            </Button>
+                        )}
+                        {isReceivedTable && (booking.status === 'pending' || booking.status === 'confirmed') && (
+                            <Button variant="secondary" size="sm" onClick={() => handleUpdateStatus(booking.id, 'completed')}>
+                                Mark as Completed
+                            </Button>
+                        )}
+                        {!isReceivedTable && (
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="sm">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete this booking
+                                        and remove its data from our servers.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteBooking(booking.id)}>Continue</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
+                    </div>
+                </TableCell>
                 </TableRow>
             ))}
             </TableBody>
@@ -207,7 +269,7 @@ export default function AdminPanel() {
                     {!isLoadingBookings && completedBookings.length > 0 && renderBookingsTable(completedBookings, false)}
                     {!isLoadingBookings && completedBookings.length === 0 && renderEmptyState(
                         "No Completed Bookings",
-                        "Bookings marked as 'completed' will appear here.",
+                        "Completed bookings from the last two months will appear here.",
                         <PackageCheck className="h-12 w-12 text-muted-foreground" />
                     )}
                 </TabsContent>
