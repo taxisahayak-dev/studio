@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Phone, LogOut, Shield } from 'lucide-react';
+import { Menu, Phone, LogOut, Shield, UserCircle } from 'lucide-react';
 import { Logo } from './logo';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
 import { useUser } from '@/firebase';
 import { getAuth, signOut } from 'firebase/auth';
+import { Avatar, AvatarFallback } from './ui/avatar';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -228,21 +229,39 @@ export function Header() {
                   Call Us
                 </a>
               </DropdownMenuItem>
-              {user && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2">
-                    <LogOut />
-                    Logout
-                  </DropdownMenuItem>
-                </>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
           
           <Button asChild>
             <Link href="/#booking">Book a Ride</Link>
           </Button>
+          
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        <UserCircle className="h-6 w-6" />
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                     <Link href="/admin" className="flex items-center gap-2">
+                      <Shield />
+                      Admin Panel
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2">
+                    <LogOut />
+                    Logout
+                  </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
