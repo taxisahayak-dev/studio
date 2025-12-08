@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -46,20 +47,30 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
     return { success: true, message: 'Login successful!' };
   } catch (error: any) {
     // If sign-in fails because the user account doesn't exist, create it.
-    if (error.code === 'auth/invalid-credential') {
+    if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // *** THIS IS THE CRITICAL FIX ***
         // After creating the user, grant them the admin role in Firestore.
+        // This is a common pattern for bootstrapping an initial admin user.
         const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
         await setDoc(adminRoleRef, { uid: user.uid, role: 'admin' });
 
-        return { success: true, message: 'Admin account created and permissions granted. Logging in...' };
+        // Sign in the newly created user to establish a session
+        await signInWithEmailAndPassword(auth, email, password);
+
+        return { success: true, message: 'Admin account created and logged in.' };
       } catch (creationError: any) {
-        console.error('Firebase Admin Creation Error:', creationError.message);
-        return { success: false, message: 'Failed to create admin account.' };
+        // This might happen if the account exists but the password was wrong initially.
+        // Let's try signing in again, as the account likely exists now.
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            return { success: true, message: 'Login successful!' };
+        } catch (signInError: any) {
+            console.error('Firebase Admin Creation/Login Error:', creationError.message, signInError.message);
+            return { success: false, message: 'Invalid credentials or failed to create admin account.' };
+        }
       }
     }
 
