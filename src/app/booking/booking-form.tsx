@@ -30,6 +30,7 @@ export function BookingForm() {
       name: '',
       contactNumber: '',
       pickupLocation: '',
+      dropOffLocation: '',
       pickupTime: '',
     },
   });
@@ -54,7 +55,7 @@ export function BookingForm() {
             name: data.name,
             contact: data.contactNumber,
             pickupPoint: data.pickupLocation,
-            dropOffPoint: 'N/A',
+            dropOffPoint: data.dropOffLocation,
             dateTime: Timestamp.fromDate(pickupDateTime),
             status: 'pending',
             customerId: null,
@@ -140,6 +141,19 @@ export function BookingForm() {
                   <Label>Pickup Location <span className="text-destructive">*</span></Label>
                   <FormControl>
                     <Input placeholder="Enter pickup address" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="dropOffLocation"
+              render={({ field }) => (
+                <FormItem>
+                  <Label>Drop-off Location <span className="text-destructive">*</span></Label>
+                  <FormControl>
+                    <Input placeholder="Enter drop-off address" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
