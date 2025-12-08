@@ -13,11 +13,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { MapPin } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { bookingSchema, type BookingSchema } from '@/lib/schemas';
-import { handleBookingSubmission } from './actions';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { v4 as uuidv4 } from 'uuid';
+import { displaySubmissionStatus } from '@/ai/flows/display-submission-status';
+
 
 export function BookingForm() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const firestore = useFirestore();
 
   const form = useForm<BookingSchema>({
     resolver: zodResolver(bookingSchema),
@@ -30,22 +35,60 @@ export function BookingForm() {
   });
 
   async function onSubmit(data: BookingSchema) {
+    if (!firestore) {
+        toast({
+            variant: 'destructive',
+            title: 'Submission Failed',
+            description: 'Firestore is not available. Please try again later.',
+        });
+        return;
+    }
     setIsSubmitting(true);
-    const result = await handleBookingSubmission(data);
-    setIsSubmitting(false);
 
-    if (result.success && result.message) {
-      toast({
-        title: 'Booking Submitted!',
-        description: result.message,
-      });
-      form.reset();
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Submission Failed',
-        description: result.message || 'An unexpected error occurred.',
-      });
+    try {
+        const [hours, minutes] = data.pickupTime.split(':');
+        const pickupDateTime = new Date();
+        pickupDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+
+        await addDoc(collection(firestore, 'bookings'), {
+            name: data.name,
+            contact: data.contactNumber,
+            pickupPoint: data.pickupLocation,
+            dropOffPoint: 'N/A',
+            dateTime: Timestamp.fromDate(pickupDateTime),
+            status: 'pending',
+            customerId: null,
+        });
+
+        try {
+            const orderId = uuidv4().slice(0, 8).toUpperCase();
+            const aiResponse = await displaySubmissionStatus({
+                orderId: orderId,
+                estimatedResponseTime: '15 minutes',
+            });
+            toast({
+                title: 'Booking Submitted!',
+                description: aiResponse.message,
+            });
+            form.reset();
+        } catch (aiError) {
+             console.error('AI submission status error:', aiError);
+             toast({
+                title: 'Booking Submitted!',
+                description: 'Your booking has been received. We will contact you shortly.',
+            });
+            form.reset();
+        }
+
+    } catch (error) {
+        console.error('Firestore error:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Submission Failed',
+            description: 'Could not save your booking. Please check your connection and try again.',
+        });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 

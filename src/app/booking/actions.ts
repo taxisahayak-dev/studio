@@ -1,6 +1,10 @@
 
 'use server';
 
+// This server action is no longer used by the booking form but is kept
+// in case it's needed for other purposes in the future.
+// The booking logic has been moved to `src/app/booking/booking-form.tsx` for client-side handling.
+
 import { z } from 'zod';
 import { bookingSchema } from '@/lib/schemas';
 import { displaySubmissionStatus } from '@/ai/flows/display-submission-status';
@@ -22,16 +26,15 @@ export async function handleBookingSubmission(
 
     const bookingRef = collection(firestore, 'bookings');
     
-    // Combine date and time
     const [hours, minutes] = parsedData.data.pickupTime.split(':');
-    const pickupDateTime = new Date(); // Using today's date, can be adjusted if a date picker is added
+    const pickupDateTime = new Date();
     pickupDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
 
     await addDoc(bookingRef, {
       name: parsedData.data.name,
       contact: parsedData.data.contactNumber,
       pickupPoint: parsedData.data.pickupLocation,
-      dropOffPoint: 'N/A', // Not in the new form
+      dropOffPoint: 'N/A', 
       dateTime: Timestamp.fromDate(pickupDateTime),
       status: 'pending',
       customerId: null,
