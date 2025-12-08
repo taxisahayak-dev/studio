@@ -1,8 +1,9 @@
+
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Menu, Phone, LogOut, Shield, UserCircle } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Menu, Phone, LogOut } from 'lucide-react';
 import { Logo } from './logo';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -11,13 +12,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
-import { useUser } from '@/firebase';
-import { getAuth, signOut } from 'firebase/auth';
-import { Avatar, AvatarFallback } from './ui/avatar';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -48,13 +45,15 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
-  const { user } = useUser();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [activeLink, setActiveLink] = useState('');
   const [isClient, setIsClient] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
+    setIsAdmin(localStorage.getItem('isAdmin') === 'true');
   }, []);
 
   useEffect(() => {
@@ -122,14 +121,17 @@ export function Header() {
     return pathname === href ? 'text-primary' : 'text-muted-foreground'
   };
   
-  const handleLogout = async () => {
-    const auth = getAuth();
-    await signOut(auth);
-    // Optionally redirect to home or login page
+  const handleLogout = () => {
+    localStorage.removeItem('isAdmin');
+    setIsAdmin(false);
+    router.push('/login');
   };
 
   const renderNavLinks = () => {
-      const links = navLinks;
+      const links = [...navLinks];
+      if (isAdmin) {
+          links.push({ href: '/admin', label: 'Dashboard' });
+      }
       return links.map(link => (
             <Link
               key={link.href}
@@ -146,7 +148,10 @@ export function Header() {
   }
   
   const renderMobileNavLinks = () => {
-      const links = navLinks;
+      const links = [...navLinks];
+      if (isAdmin) {
+          links.push({ href: '/admin', label: 'Dashboard' });
+      }
       return links.map(link => (
             <Link
               key={link.href}
@@ -278,7 +283,7 @@ export function Header() {
                       Call Us
                     </a>
                   </Button>
-                  {user && (
+                  {isAdmin && (
                      <Button onClick={() => { handleLogout(); setIsOpen(false); }} className="w-full" variant="destructive">
                         <LogOut className="mr-2 h-4 w-4" />
                         Logout

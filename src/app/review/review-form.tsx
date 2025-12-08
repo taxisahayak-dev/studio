@@ -33,6 +33,9 @@ export function ReviewForm({ onReviewSubmitted }: ReviewFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hoveredRating, setHoveredRating] = useState(0);
+  
+  // NOTE: This component still uses Firebase Auth for user context.
+  // The login flow is now client-side, but reviews are still linked to a Firebase user if they exist.
   const { user, isUserLoading } = useUser();
 
   const form = useForm<ReviewSchema>({
@@ -45,26 +48,15 @@ export function ReviewForm({ onReviewSubmitted }: ReviewFormProps) {
   });
 
   useEffect(() => {
-    if (user) {
-      form.setValue('email', user.email || '');
+    if (user?.email) {
+      form.setValue('email', user.email);
     }
   }, [user, form]);
   
   const currentRating = form.watch('rating');
 
   async function onSubmit(data: ReviewSchema) {
-    if (!user) {
-        toast({
-            variant: 'destructive',
-            title: 'Authentication Required',
-            description: 'You must be logged in to submit a review.',
-            duration: 3000,
-        });
-        if (onReviewSubmitted) onReviewSubmitted();
-        router.push('/login'); 
-        return;
-    }
-    
+    // Unlike admin, we allow anonymous reviews but can link them if user is logged in
     setIsSubmitting(true);
     const result = await handleReviewSubmission(data);
     setIsSubmitting(false);
@@ -157,7 +149,7 @@ export function ReviewForm({ onReviewSubmitted }: ReviewFormProps) {
             ) : isUserLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            {isUserLoading ? 'Verifying...' : isSubmitting ? 'Submitting...' : 'Submit Review'}
+            {isUserLoading ? 'Loading...' : isSubmitting ? 'Submitting...' : 'Submit Review'}
             </Button>
         </DialogFooter>
       </form>

@@ -7,106 +7,67 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, KeyRound } from 'lucide-react';
 import Link from 'next/link';
-import { handleLogin } from './actions';
-import { useUser } from '@/firebase';
-
 
 const loginSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email address.' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  email: z.string().email(),
+  password: z.string().min(1),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+// Hardcoded admin credentials
+const ADMIN_EMAIL = "nikhilpandit9046@gmail.com";
+const ADMIN_PASSWORD = "nikhil@9948"; 
+
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, isUserLoading } = useUser();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    if (localStorage.getItem("isAdmin") === "true") {
+      router.replace('/admin');
+    }
+  }, [router]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+    defaultValues: { email: '', password: '' },
   });
 
-  useEffect(() => {
-    // If the user object is available (meaning they are logged in), redirect them.
-    if (user && !isUserLoading) {
-      router.push('/admin');
-    }
-  }, [user, isUserLoading, router]);
+  const onSubmit = (data: LoginFormValues) => {
+    setIsLoading(true);
 
-  async function onSubmit(data: LoginFormValues) {
-    setIsSubmitting(true);
-    
-    const result = await handleLogin(data);
-
-    if (result.success) {
-        toast({
-            title: "Login Successful",
-            description: "Redirecting to your dashboard...",
-        });
-        // Refresh the page. This allows the useUser hook to pick up the new
-        // auth state, and the useEffect above will then trigger the redirect.
-        router.refresh();
-    } else {
-        toast({
-            variant: "destructive",
-            title: "Login Failed",
-            description: result.message,
-        });
-        setIsSubmitting(false); // Stop loading on failure
-    }
-  }
+    setTimeout(() => { // simulate server delay
+      if (data.email === ADMIN_EMAIL && data.password === ADMIN_PASSWORD) {
+        localStorage.setItem("isAdmin", "true"); // set admin session locally
+        toast({ title: "Login Successful", description: "Redirecting to dashboard..." });
+        router.push("/admin");
+      } else {
+        toast({ variant: "destructive", title: "Login Failed", description: "Invalid credentials" });
+        setIsLoading(false);
+      }
+    }, 500);
+  };
   
-  // While firebase is checking auth state, show a loader
-  if (isUserLoading) {
-      return (
-          <div className="flex min-h-[calc(100vh-14rem)] items-center justify-center">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          </div>
-      );
+  if (!isClient) {
+    return (
+        <div className="flex min-h-screen items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
   }
-
-  // If user is already logged in, they will be redirected by useEffect.
-  // We can show a message here or just let it be blank until redirect.
-  if (user) {
-       return (
-          <div className="flex min-h-[calc(100vh-14rem)] items-center justify-center">
-             <div className="text-center">
-                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-                <p className="mt-4 text-muted-foreground">Redirecting to dashboard...</p>
-             </div>
-          </div>
-      );
-  }
-
 
   return (
-    <div className="flex min-h-[calc(100vh-14rem)] items-center justify-center bg-background px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -125,12 +86,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="admin@example.com"
-                        {...field}
-                        disabled={isSubmitting}
-                      />
+                      <Input placeholder="admin@example.com" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -143,19 +99,14 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        {...field}
-                        disabled={isSubmitting}
-                      />
+                      <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
             </form>

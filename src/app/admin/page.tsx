@@ -2,15 +2,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import { initializeFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useFirestore, useCollection, useUser } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Loader2, ShieldCheck, LogOut, PackageOpen, PackageCheck, Package, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { signOut } from 'firebase/auth';
-import { collection, query, orderBy, doc, updateDoc, where, Timestamp, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import {
   Table,
   TableHeader,
@@ -36,23 +33,21 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
+const ADMIN_EMAIL = "nikhilpandit9046@gmail.com";
 
 export default function AdminPanel() {
-  const { auth } = initializeFirebase();
   const router = useRouter();
   const { toast } = useToast();
-  const { user, isUserLoading } = useUser();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isUserLoading) {
-      if (user && user.email === "nikhilpandit9046@gmail.com") {
-        setLoading(false);
-      } else {
-        router.replace('/login');
-      }
+    const isAdmin = localStorage.getItem("isAdmin") === "true";
+    if (!isAdmin) {
+      router.replace('/login');
+    } else {
+      setLoading(false);
     }
-  }, [user, isUserLoading, router]);
+  }, [router]);
 
   const firestore = useFirestore();
 
@@ -79,9 +74,8 @@ export default function AdminPanel() {
     }) || [];
   }, [bookings, twoMonthsAgo]);
 
-  const handleLogout = async () => {
-    const auth = getAuth();
-    await signOut(auth);
+  const handleLogout = () => {
+    localStorage.removeItem("isAdmin");
     router.push('/login');
   };
 
@@ -124,7 +118,7 @@ export default function AdminPanel() {
   }
 
 
-  if (loading || isUserLoading) {
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -238,7 +232,7 @@ export default function AdminPanel() {
               <ShieldCheck className="h-8 w-8 text-primary" />
               Admin Dashboard
             </CardTitle>
-            {user && <CardDescription>Signed in as: {user.email}</CardDescription>}
+            <CardDescription>Signed in as: {ADMIN_EMAIL}</CardDescription>
           </div>
           <Button variant="outline" size="sm" onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
@@ -283,5 +277,3 @@ export default function AdminPanel() {
     </div>
   );
 }
-
-    
