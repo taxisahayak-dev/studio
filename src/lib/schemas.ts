@@ -6,6 +6,7 @@ export const bookingSchema = z.object({
   contactNumber: z.string().min(10, { message: "A valid contact number is required." }),
   pickupLocation: z.string().min(3, { message: "Pickup location is required." }),
   dropOffLocation: z.string().min(3, { message: "Drop-off location is required." }),
+  pickupDate: z.string().min(1, { message: "Pickup date is required." }),
   pickupTime: z.string().min(1, { message: "Pickup time is required." }),
 });
 

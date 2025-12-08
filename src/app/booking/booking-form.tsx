@@ -31,6 +31,7 @@ export function BookingForm() {
       contactNumber: '',
       pickupLocation: '',
       dropOffLocation: '',
+      pickupDate: '',
       pickupTime: '',
     },
   });
@@ -48,8 +49,10 @@ export function BookingForm() {
 
     try {
         const [hours, minutes] = data.pickupTime.split(':');
-        const pickupDateTime = new Date();
+        const pickupDateTime = new Date(data.pickupDate);
         pickupDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+        pickupDateTime.setMinutes(pickupDateTime.getMinutes() - pickupDateTime.getTimezoneOffset());
+
 
         await addDoc(collection(firestore, 'bookings'), {
             name: data.name,
@@ -159,19 +162,34 @@ export function BookingForm() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="pickupTime"
-              render={({ field }) => (
-                <FormItem>
-                  <Label>Pickup Time <span className="text-destructive">*</span></Label>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <FormField
+                control={form.control}
+                name="pickupDate"
+                render={({ field }) => (
+                    <FormItem>
+                    <Label>Pickup Date <span className="text-destructive">*</span></Label>
+                    <FormControl>
+                        <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="pickupTime"
+                render={({ field }) => (
+                    <FormItem>
+                    <Label>Pickup Time <span className="text-destructive">*</span></Label>
+                    <FormControl>
+                        <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Submit Booking
