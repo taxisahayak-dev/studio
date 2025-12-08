@@ -2,9 +2,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // BOOKINGS: Anyone can create. Only admin can read/update/delete.
     match /bookings/{docId} {
       allow create: if true;
       allow read, update, delete: if request.auth != null
+        && request.auth.token.email == "nikhilpandit9046@gmail.com";
+    }
+
+    // CUSTOMERS: Only admin can read/write
+    match /customers/{docId} {
+      allow read, write: if request.auth != null
         && request.auth.token.email == "nikhilpandit9046@gmail.com";
     }
 
