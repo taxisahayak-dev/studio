@@ -18,11 +18,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ReviewSchema, reviewSchema } from '@/lib/schemas';
-import { handleReviewSubmission } from './actions';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
 import { DialogFooter } from '@/components/ui/dialog';
+import { addDoc, collection } from 'firebase/firestore';
+
 
 interface ReviewFormProps {
   onReviewSubmitted?: () => void;
@@ -30,12 +30,10 @@ interface ReviewFormProps {
 
 export function ReviewForm({ onReviewSubmitted }: ReviewFormProps) {
   const { toast } = useToast();
-  const router = useRouter();
+  const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hoveredRating, setHoveredRating] = useState(0);
   
-  // NOTE: This component still uses Firebase Auth for user context.
-  // The login flow is now client-side, but reviews are still linked to a Firebase user if they exist.
   const { user, isUserLoading } = useUser();
 
   const form = useForm<ReviewSchema>({
@@ -56,26 +54,42 @@ export function ReviewForm({ onReviewSubmitted }: ReviewFormProps) {
   const currentRating = form.watch('rating');
 
   async function onSubmit(data: ReviewSchema) {
-    // Unlike admin, we allow anonymous reviews but can link them if user is logged in
+    if (!firestore) {
+        toast({
+            variant: 'destructive',
+            title: 'Submission Failed',
+            description: 'Database is not available. Please try again later.',
+        });
+        return;
+    }
     setIsSubmitting(true);
-    const result = await handleReviewSubmission(data);
-    setIsSubmitting(false);
+    
+    try {
+        const reviewsRef = collection(firestore, 'reviews');
+        await addDoc(reviewsRef, {
+            ...data,
+            userId: user?.uid || null,
+            submissionDate: new Date(),
+        });
+        
+        toast({
+            title: 'Review Submitted',
+            description: 'Thank you for your feedback!',
+        });
+        form.reset({email: user?.email || '', rating: 0, message: ''});
+        if (onReviewSubmitted) {
+            onReviewSubmitted();
+        }
 
-    if (result.success) {
-      toast({
-        title: 'Review Submitted',
-        description: 'Thank you for your feedback!',
-      });
-      form.reset({email: user?.email || '', rating: 0, message: ''});
-      if (onReviewSubmitted) {
-        onReviewSubmitted();
-      }
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Submission Failed',
-        description: result.message || 'An unexpected error occurred.',
-      });
+    } catch (error) {
+        console.error('Firestore error:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Submission Failed',
+            description: 'Could not save your review. Please try again.',
+        });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
