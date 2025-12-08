@@ -6,10 +6,10 @@ import { initializeFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Loader2, ShieldCheck, LogOut, PackageOpen, PackageCheck, Package } from 'lucide-react';
+import { Loader2, ShieldCheck, LogOut, PackageOpen, PackageCheck, Package, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'firebase/auth';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import {
   Table,
   TableHeader,
@@ -21,11 +21,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function AdminPanel() {
   const { auth } = initializeFirebase();
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -62,11 +64,30 @@ export default function AdminPanel() {
     router.push('/login');
   };
 
+  const handleUpdateStatus = async (bookingId: string, newStatus: 'confirmed' | 'completed') => {
+    if (!firestore) return;
+    try {
+        const bookingRef = doc(firestore, 'bookings', bookingId);
+        await updateDoc(bookingRef, { status: newStatus });
+        toast({
+            title: "Booking Updated",
+            description: `The booking has been marked as ${newStatus}.`,
+        });
+    } catch(error) {
+        console.error("Error updating booking status: ", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not update the booking status.",
+        });
+    }
+  }
+
   if (loading || isUserLoading) return <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>;
       
-  const renderBookingsTable = (data: typeof bookings) => {
+  const renderBookingsTable = (data: typeof bookings, isReceivedTable: boolean) => {
     if (!data || data.length === 0) return null;
     return (
         <div className="overflow-x-auto rounded-md border">
@@ -78,7 +99,8 @@ export default function AdminPanel() {
                 <TableHead>Pickup</TableHead>
                 <TableHead>Drop-off</TableHead>
                 <TableHead>Date & Time</TableHead>
-                <TableHead className="text-right">Status</TableHead>
+                <TableHead>Status</TableHead>
+                {isReceivedTable && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
             </TableHeader>
             <TableBody>
@@ -91,7 +113,7 @@ export default function AdminPanel() {
                 <TableCell>
                     {booking.dateTime ? format(booking.dateTime.toDate(), 'PPP p') : 'N/A'}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell>
                     <Badge
                     variant={
                         booking.status === 'confirmed'
@@ -104,6 +126,23 @@ export default function AdminPanel() {
                     {booking.status}
                     </Badge>
                 </TableCell>
+                {isReceivedTable && (
+                    <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                            {booking.status === 'pending' && (
+                                <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(booking.id, 'confirmed')}>
+                                    <Check className="mr-2 h-4 w-4" />
+                                    Confirm
+                                </Button>
+                            )}
+                            {(booking.status === 'pending' || booking.status === 'confirmed') && (
+                                <Button variant="secondary" size="sm" onClick={() => handleUpdateStatus(booking.id, 'completed')}>
+                                    Mark as Completed
+                                </Button>
+                            )}
+                        </div>
+                    </TableCell>
+                )}
                 </TableRow>
             ))}
             </TableBody>
@@ -152,7 +191,7 @@ export default function AdminPanel() {
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     )}
-                    {!isLoadingBookings && receivedBookings.length > 0 && renderBookingsTable(receivedBookings)}
+                    {!isLoadingBookings && receivedBookings.length > 0 && renderBookingsTable(receivedBookings, true)}
                     {!isLoadingBookings && receivedBookings.length === 0 && renderEmptyState(
                         "No Received Bookings",
                         "New and confirmed bookings will appear here.",
@@ -165,7 +204,7 @@ export default function AdminPanel() {
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     )}
-                    {!isLoadingBookings && completedBookings.length > 0 && renderBookingsTable(completedBookings)}
+                    {!isLoadingBookings && completedBookings.length > 0 && renderBookingsTable(completedBookings, false)}
                     {!isLoadingBookings && completedBookings.length === 0 && renderEmptyState(
                         "No Completed Bookings",
                         "Bookings marked as 'completed' will appear here.",
