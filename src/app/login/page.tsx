@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 import { handleLogin } from './actions';
+import { useUser } from '@/firebase';
 
 
 const loginSchema = z.object({
@@ -41,14 +42,27 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const { user, isUserLoading } = useUser();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      email: 'nikhilpandit9046@gmail.com',
       password: '',
     },
   });
+
+  useEffect(() => {
+    // If login was successful and the user object is now available, redirect.
+    if (loginSuccess && user && !isUserLoading) {
+      toast({
+          title: "Redirecting...",
+          description: "You are now being redirected to the admin dashboard.",
+      });
+      router.push('/admin');
+    }
+  }, [loginSuccess, user, isUserLoading, router, toast]);
 
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
@@ -58,18 +72,17 @@ export default function LoginPage() {
     if (result.success) {
         toast({
             title: "Login Successful",
-            description: "Redirecting to the admin dashboard...",
+            description: "Verifying session, please wait...",
         });
-        router.push("/admin");
+        setLoginSuccess(true); // Set flag to trigger useEffect
     } else {
         toast({
             variant: "destructive",
             title: "Login Failed",
             description: result.message,
         });
+        setIsLoading(false); // Only stop loading on failure
     }
-
-    setIsLoading(false);
   }
 
   return (
