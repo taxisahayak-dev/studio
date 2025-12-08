@@ -25,7 +25,7 @@ export async function handleBookingSubmission(
       ...parsedData.data,
       dateTime: new Date(parsedData.data.date + 'T' + parsedData.data.time),
       status: 'pending',
-      customerId: null, // No longer creating customer records
+      customerId: null, // Set customerId to null for anonymous bookings
     });
 
   } catch (error) {
