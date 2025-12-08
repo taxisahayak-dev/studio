@@ -1,20 +1,20 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // BOOKINGS COLLECTION - Allow creation by anyone, admin has full access.
+    // BOOKINGS COLLECTION
     match /bookings/{bookingId} {
+      // Anyone can CREATE a booking
       allow create: if true;
-      allow read, update, delete: if request.auth != null
-                         && request.auth.uid == "9lUgLARr9PYOLQKboZ555BLhDsq2";
+
+      // Only admin can read, update, or delete
+      allow read, update, delete: if request.auth != null && request.auth.token.email == "nikhilpandit9046@gmail.com";
     }
 
     // CONTACT FORM - Allow creation by anyone, admin has full access.
     match /contact_form_submissions/{submissionId} {
       allow create: if true;
-      allow read, update, delete: if request.auth != null
-                         && request.auth.uid == "9lUgLARr9PYOLQKboZ555BLhDsq2";
+      allow read, update, delete: if request.auth != null && request.auth.token.email == "nikhilpandit9046@gmail.com";
     }
     
     // REVIEWS: Allow anyone to read, but only signed-in users to create.
@@ -30,7 +30,7 @@ service cloud.firestore {
     
     // ADMIN ROLES: Only admins can read this collection
      match /roles_admin/{userId} {
-      allow read: if request.auth != null && request.auth.uid == "9lUgLARr9PYOLQKboZ555BLhDsq2";
+      allow read: if request.auth != null && request.auth.token.email == "nikhilpandit9046@gmail.com";
     }
   }
 }
