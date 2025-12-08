@@ -45,9 +45,9 @@ export default function AdminPanel() {
   const firestore = useFirestore();
 
   const bookingsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null; // Wait for user to be authenticated
+    if (!firestore) return null;
     return query(collection(firestore, 'bookings'), orderBy('dateTime', 'desc'));
-  }, [firestore, user]);
+  }, [firestore]);
 
   const { data: bookings, isLoading: isLoadingBookings } = useCollection(bookingsQuery);
 
