@@ -42,40 +42,26 @@ export async function handleLogin(data: z.infer<typeof loginSchema>) {
   }
 
   try {
-    // First, try to sign in the user.
+    // If credentials are correct, try to sign in. This creates the session.
     await signInWithEmailAndPassword(auth, email, password);
     return { success: true, message: 'Login successful!' };
   } catch (error: any) {
-    // If sign-in fails because the user account doesn't exist, create it.
+    // If sign-in fails because the user doesn't exist, create the admin user.
+    // This is a one-time setup for the very first login.
     if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
       try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        // After creating the user, grant them the admin role in Firestore.
-        // This is a common pattern for bootstrapping an initial admin user.
-        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-        await setDoc(adminRoleRef, { uid: user.uid, role: 'admin' });
-
-        // Sign in the newly created user to establish a session
+        await createUserWithEmailAndPassword(auth, email, password);
+        // After creating, sign in again to establish the session.
         await signInWithEmailAndPassword(auth, email, password);
-
         return { success: true, message: 'Admin account created and logged in.' };
       } catch (creationError: any) {
-        // This might happen if the account exists but the password was wrong initially.
-        // Let's try signing in again, as the account likely exists now.
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            return { success: true, message: 'Login successful!' };
-        } catch (signInError: any) {
-            console.error('Firebase Admin Creation/Login Error:', creationError.message, signInError.message);
-            return { success: false, message: 'Invalid credentials or failed to create admin account.' };
-        }
+        console.error('Firebase Admin Creation Error:', creationError.message);
+        return { success: false, message: 'Failed to create admin account.' };
       }
     }
 
-    // For any other type of error (e.g., wrong password after user exists).
+    // Handle other errors (e.g., network issues)
     console.error('Firebase Login Error:', error.message);
-    return { success: false, message: 'Invalid admin credentials.' };
+    return { success: false, message: 'An error occurred during login.' };
   }
 }
