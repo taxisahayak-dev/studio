@@ -47,7 +47,7 @@ export default function LoginPage() {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'nikhilpandit9046@gmail.com',
+      email: '',
       password: '',
     },
   });
@@ -67,10 +67,11 @@ export default function LoginPage() {
     if (result.success) {
         toast({
             title: "Login Successful",
-            description: "Verifying session, please wait...",
+            description: "Redirecting to your dashboard...",
         });
-        // The useEffect will handle the redirect once the user state is updated.
-        // We don't need to manually stop the loader, as the page will redirect.
+        // Refresh the page. This allows the useUser hook to pick up the new
+        // auth state, and the useEffect above will then trigger the redirect.
+        router.refresh();
     } else {
         toast({
             variant: "destructive",
