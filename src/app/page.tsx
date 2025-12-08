@@ -1,3 +1,8 @@
+
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -50,6 +55,35 @@ const UpiLogo = () => (
 );
 
 export default function Home() {
+  const router = useRouter();
+  const [inputSequence, setInputSequence] = useState('');
+  const secretCode = 'nikhil1010';
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore keys with modifiers (except Shift) to avoid interfering with shortcuts
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      
+      let newSequence = inputSequence + e.key;
+      
+      if (newSequence.endsWith(secretCode)) {
+        router.push('/login');
+        newSequence = ''; // Reset after triggering
+      } else if (newSequence.length > secretCode.length) {
+         // Keep the sequence from getting too long
+        newSequence = newSequence.slice(-secretCode.length);
+      }
+      
+      setInputSequence(newSequence);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [inputSequence, router]);
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
