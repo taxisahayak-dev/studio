@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -48,11 +47,11 @@ export function BookingForm() {
     setIsSubmitting(true);
 
     try {
-        const [hours, minutes] = data.pickupTime.split(':');
-        const pickupDateTime = new Date(data.pickupDate);
-        pickupDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-        pickupDateTime.setMinutes(pickupDateTime.getMinutes() - pickupDateTime.getTimezoneOffset());
-
+        // This combines the user's selected date and time without any timezone conversion.
+        // The resulting string is in 'YYYY-MM-DDTHH:mm' format.
+        const localDateTimeString = `${data.pickupDate}T${data.pickupTime}`;
+        // Creating a new Date object from this string interprets it in the user's local timezone.
+        const pickupDateTime = new Date(localDateTimeString);
 
         await addDoc(collection(firestore, 'bookings'), {
             name: data.name,
@@ -203,3 +202,4 @@ export function BookingForm() {
     </Card>
   );
 }
+
