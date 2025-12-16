@@ -7,8 +7,7 @@ import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'Pandey Taxi Service',
-  description: 'Reliable and professional taxi service for all your needs.',
+  title: 'Pandey Taxi Service, Bareilly | Affordable & Reliable Taxi',
   description: 'Reliable and affordable taxi service in Bareilly. Airport taxi, local & outstation cabs available. Book Pandey Taxi Service now.',
 };
 
