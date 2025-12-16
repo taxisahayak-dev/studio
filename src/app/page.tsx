@@ -57,8 +57,7 @@ export default function Home() {
             Your Journey, Our Priority
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-neutral-200 md:text-xl">
-            Experience reliable, safe, and comfortable rides with Pandey Taxi Service.
-            Book your next trip in minutes.
+            Reliable, safe, and comfortable taxi service in Bareilly.
           </p>
           <Button asChild size="lg" className="mt-8 bg-accent text-accent-foreground hover:bg-accent/90">
             <Link href="#booking">Book a Ride Now</Link>
